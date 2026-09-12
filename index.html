@@ -1,0 +1,3235 @@
+<meta charset="utf-8">
+<title>Substation Risk Simulator</title>
+<meta name="author" content="Ayman Khayat">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ground: #EDF0EB;
+  --surface: #F9FAF7;
+  --rail: #E4E8E1;
+  --line: #D3D9D0;
+  --line-strong: #B4BDB1;
+  --ink-1: #151A16;
+  --ink-2: #48514A;
+  --ink-muted: #78827A;
+  --accent: #B4621A;
+  --accent-ink: #8C480E;
+  --accent-soft: rgba(180, 98, 26, 0.12);
+  --focus: #B4621A;
+  --chart-surface: #F9FAF7;
+  --chart-grid: #E2E6DF;
+  --chart-axis: #B4BDB1;
+  --series-1: #2a78d6;
+  --series-1-soft: rgba(42, 120, 214, 0.14);
+  --tor-low: #2a78d6;
+  --tor-high: #e34948;
+  --marker: #39413B;
+  --crit-high-bg: rgba(180, 98, 26, 0.14);
+  --crit-high-ink: #8C480E;
+  --crit-low-bg: rgba(72, 81, 74, 0.09);
+  --crit-low-ink: #48514A;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #121517;
+    --surface: #1A1E20;
+    --rail: #16191B;
+    --line: #2A3033;
+    --line-strong: #3B4347;
+    --ink-1: #ECF0EA;
+    --ink-2: #B3BBB4;
+    --ink-muted: #858E87;
+    --accent: #E08A3C;
+    --accent-ink: #EBA262;
+    --accent-soft: rgba(224, 138, 60, 0.16);
+    --focus: #E08A3C;
+    --chart-surface: #1A1E20;
+    --chart-grid: #262B2E;
+    --chart-axis: #3B4347;
+    --series-1: #3987e5;
+    --series-1-soft: rgba(57, 135, 229, 0.22);
+    --tor-low: #3987e5;
+    --tor-high: #e66767;
+    --marker: #C8CFC9;
+    --crit-high-bg: rgba(224, 138, 60, 0.18);
+    --crit-high-ink: #EBA262;
+    --crit-low-bg: rgba(179, 187, 180, 0.10);
+    --crit-low-ink: #B3BBB4;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #121517;
+  --surface: #1A1E20;
+  --rail: #16191B;
+  --line: #2A3033;
+  --line-strong: #3B4347;
+  --ink-1: #ECF0EA;
+  --ink-2: #B3BBB4;
+  --ink-muted: #858E87;
+  --accent: #E08A3C;
+  --accent-ink: #EBA262;
+  --accent-soft: rgba(224, 138, 60, 0.16);
+  --focus: #E08A3C;
+  --chart-surface: #1A1E20;
+  --chart-grid: #262B2E;
+  --chart-axis: #3B4347;
+  --series-1: #3987e5;
+  --series-1-soft: rgba(57, 135, 229, 0.22);
+  --tor-low: #3987e5;
+  --tor-high: #e66767;
+  --marker: #C8CFC9;
+  --crit-high-bg: rgba(224, 138, 60, 0.18);
+  --crit-high-ink: #EBA262;
+  --crit-low-bg: rgba(179, 187, 180, 0.10);
+  --crit-low-ink: #B3BBB4;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--ground); }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink-1);
+  font: 14px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.boot { margin: 0; padding: 48px 32px; font: 13px var(--font-mono); color: var(--ink-muted); }
+
+.app { max-width: 1520px; margin: 0 auto; }
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px 40px;
+  align-items: end;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.eyebrow {
+  margin: 0 0 8px;
+  font: 600 11px/1.2 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.masthead h1 {
+  margin: 0;
+  font: 600 34px/1.08 var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.mast-sub { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
+
+.titleblock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(96px, auto)) minmax(150px, auto);
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+.titleblock > div { padding: 6px 12px 7px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.titleblock > div:nth-child(n + 5) { border-bottom: 0; }
+.titleblock > .tb-sign {
+  grid-column: 5;
+  grid-row: 1 / span 2;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 8px 16px 9px;
+  border-right: 0;
+  background: var(--accent-soft);
+}
+.titleblock .tb-sign-name { margin: 0; font: 600 18px/1.1 var(--font-display); color: var(--ink-1); }
+.titleblock .tb-sign-link { margin: 0; }
+.titleblock .tb-sign-link a { font: 500 11px var(--font-mono); color: var(--accent-ink); text-decoration: none; }
+.titleblock .tb-sign-link a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.titleblock dt {
+  font: 600 9.5px/1.2 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.titleblock dd {
+  margin: 2px 0 0;
+  font: 500 12.5px/1.3 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.titleblock .is-stale { color: var(--accent-ink); }
+
+.layout { display: grid; grid-template-columns: 372px minmax(0, 1fr); align-items: start; }
+
+.rail {
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: var(--rail);
+  border-right: 1px solid var(--line);
+  padding: 4px 0 32px;
+}
+.rail-sec { padding: 18px 22px 8px; border-bottom: 1px solid var(--line); }
+.rail-sec:last-child { border-bottom: 0; }
+.rail-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 12px;
+  font: 600 12px/1.2 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rail-unit { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--ink-muted); }
+
+.prow { display: grid; gap: 8px; padding: 12px 0 14px; border-top: 1px dashed var(--line-strong); }
+.rail-sec .prow:first-of-type { border-top: 0; padding-top: 0; }
+.prow-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.prow-title { flex: 1 1 auto; min-width: 0; font: 600 14px/1.25 var(--font-display); color: var(--ink-1); }
+.prow-id {
+  flex: none;
+  font: 500 10.5px/1 var(--font-mono);
+  color: var(--ink-muted);
+  padding: 3px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+.prow-meta { font-size: 12px; color: var(--ink-muted); }
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  font: 500 10.5px/1 var(--font-mono);
+  padding: 4px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.chip-crit-high { background: var(--crit-high-bg); color: var(--crit-high-ink); }
+.chip-crit-low { background: var(--crit-low-bg); color: var(--crit-low-ink); }
+
+.tp { display: grid; gap: 1px; }
+.tp-caption {
+  font: 600 10.5px/1.2 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+.tp-line { display: grid; grid-template-columns: 14px minmax(0, 1fr) 86px; align-items: center; gap: 10px; }
+.tp-entry { display: flex; align-items: baseline; justify-content: flex-end; gap: 3px; }
+.tp-num {
+  width: 60px;
+  padding: 3px 4px;
+  font: 500 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ink-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+.tp-num:hover { border-color: var(--line-strong); }
+.tp-num:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.tp-unit { font: 500 10.5px var(--font-mono); color: var(--ink-muted); }
+
+.prow-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  margin-left: -5px;
+  padding: 2px 4px;
+  font: 600 14px/1.25 var(--font-display);
+  color: var(--ink-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+.prow-name:hover { border-color: var(--line-strong); }
+.prow-name:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: 500 15px/1 var(--font-body);
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--tor-high); border-color: var(--line-strong); }
+.pred-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.pred-chip {
+  appearance: none;
+  padding: 4px 6px;
+  font: 500 10.5px/1 var(--font-mono);
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.pred-chip:hover:not(:disabled) { border-color: var(--accent); color: var(--ink-1); }
+.pred-chip.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+.pred-chip:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-add {
+  justify-self: start;
+  margin: 10px 0 8px;
+  background: transparent;
+  color: var(--accent-ink);
+  border: 1px dashed var(--line-strong);
+}
+.btn-add:hover { border-color: var(--accent); }
+
+.corr-list { display: grid; gap: 4px; }
+.corr-row { display: grid; gap: 6px; padding: 10px 0 12px; border-top: 1px dashed var(--line-strong); }
+.corr-row.is-off { opacity: 0.55; }
+.corr-select {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 6px;
+  font: 500 12px var(--font-body);
+  color: var(--ink-1);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+.corr-select:focus { outline: none; border-color: var(--accent); }
+.corr-meta { font-size: 11.5px; color: var(--ink-muted); }
+.prow-head .corr-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.switch { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+.switch input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+
+.field { display: grid; gap: 4px; }
+.field-label {
+  font: 600 10.5px/1.2 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.field-input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  font: 500 13px var(--font-body);
+  color: var(--ink-1);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+.field-input:focus { outline: none; border-color: var(--accent); }
+.net-scroll { overflow-x: auto; }
+.tp-label { font: 600 10.5px/1 var(--font-mono); color: var(--ink-muted); cursor: help; }
+.tp-value { font: 500 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-1); }
+
+.disclosure {
+  justify-self: start;
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  font: 500 12px/1.3 var(--font-body);
+  color: var(--accent-ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+.disclosure:hover { text-decoration-color: var(--accent); }
+
+input[type=range].panel-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.panel-range::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: var(--line-strong); }
+.panel-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+}
+.panel-range::-moz-range-track { height: 3px; border-radius: 2px; background: var(--line-strong); }
+.panel-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.panel-range:hover::-webkit-slider-thumb { background: var(--accent); }
+.panel-range:hover::-moz-range-thumb { background: var(--accent); }
+
+.ctrl { display: grid; gap: 14px; }
+.ctrl-row { display: grid; gap: 6px; }
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font: 600 11px/1.2 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.control-label > :last-child:not(:first-child) { font: 500 12px var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--ink-1); }
+.ctrl-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.muted { font-size: 12px; color: var(--ink-muted); }
+
+.seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.seg-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 12.5px/1 var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg-btn:hover { background: var(--accent-soft); color: var(--ink-1); }
+.seg-btn.is-on { background: var(--ink-1); color: var(--ground); }
+.btn {
+  appearance: none;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font: 500 12.5px/1 var(--font-body);
+  cursor: pointer;
+}
+.btn-secondary { background: var(--surface); color: var(--ink-1); border-color: var(--line-strong); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+.canvas { display: grid; gap: 40px; padding: 28px 32px 48px; min-width: 0; transition: opacity 120ms ease; }
+.canvas.is-stale { opacity: 0.7; }
+
+.verdict { display: grid; gap: 16px; }
+.verdict-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 2px solid var(--ink-1);
+  border-bottom: 1px solid var(--line);
+}
+.vf { display: grid; gap: 4px; align-content: start; padding: 14px 20px 16px 0; }
+.vf + .vf { padding-left: 20px; border-left: 1px solid var(--line); }
+.vf-label {
+  font: 600 11px/1.2 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.vf-value { font: 600 36px/1.05 var(--font-display); letter-spacing: -0.01em; color: var(--ink-1); }
+.vf-joint .vf-value { color: var(--accent-ink); }
+.vf-delta { font-size: 12.5px; color: var(--ink-2); max-width: 34ch; }
+
+.table-wrap { overflow-x: auto; }
+.ptable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ptable th, .ptable td { padding: 8px 14px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.ptable th:first-child { padding-left: 0; text-align: left; }
+.ptable thead th {
+  font: 600 10.5px/1.2 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.ptable tbody th { font: 500 13px var(--font-body); color: var(--ink-2); }
+.ptable td { font: 500 13px var(--font-mono); color: var(--ink-1); }
+.ptable .is-p80 { background: var(--accent-soft); }
+.ptable thead .is-p80 { color: var(--accent-ink); }
+.verdict-note { margin: 0; font-size: 12.5px; color: var(--ink-muted); max-width: 80ch; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.block { display: grid; gap: 14px; }
+.block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.block-head h2 { margin: 0; font: 600 20px/1.2 var(--font-display); }
+.block-head p { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 62ch; }
+
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pair-wide { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+.fig {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.fig-head { display: flex; align-items: baseline; gap: 10px; }
+.fig-num { font: 500 11px var(--font-mono); color: var(--accent-ink); white-space: nowrap; }
+.fig-title { font: 600 15px/1.3 var(--font-display); color: var(--ink-1); }
+.measure { min-width: 0; }
+.fig-note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink-muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--ink-2); }
+.swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
+.swatch-low { background: var(--tor-low); }
+.swatch-high { background: var(--tor-high); }
+
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 32px; margin: 0; }
+.method dt { margin-bottom: 3px; font: 600 13.5px var(--font-display); color: var(--ink-1); }
+.method dd { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 62ch; }
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 24px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.foot a { color: var(--accent-ink); font-weight: 600; text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .titleblock { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .titleblock > .tb-sign { grid-column: 1 / -1; grid-row: 1; border-bottom: 1px solid var(--line); }
+  .titleblock > div:nth-child(n + 5) { border-bottom: 1px solid var(--line); }
+}
+
+@media (max-width: 1180px) {
+  .pair, .pair-wide { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 980px) {
+  .masthead, .layout { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); }
+  .verdict-figures { grid-template-columns: minmax(0, 1fr); }
+  .vf + .vf { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .canvas { padding: 24px 18px 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas { transition: none; }
+}
+</style>
+
+<div id="root"><p class="boot">Loading simulator…</p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.3/babel.min.js"></script>
+
+<script>
+const scnDefaultScenario = {
+  id: "substation-132kv",
+  name: "132 kV Substation Upgrade & Grid Interconnection",
+  subtitle: "40 MVA 132/33 kV transformer addition — design through energisation",
+  startDate: "2026-10-01",
+  tasks: [
+    { id: "T1", name: "Detailed design, protection studies & permitting", short: "Design & permitting", preds: [], o: 90, l: 120, p: 210 },
+    { id: "T2", name: "Power transformer & 132 kV switchgear procurement", short: "Transformer procurement", preds: ["T1"], o: 385, l: 490, p: 700 },
+    { id: "T3", name: "Civil works, foundations & control building", short: "Civil works", preds: ["T1"], o: 110, l: 150, p: 240 },
+    { id: "T4", name: "Transformer erection, switchgear install & P&C cabling", short: "Erection & installation", preds: ["T2", "T3"], o: 70, l: 95, p: 160 },
+    { id: "T5", name: "Commissioning, 87T/50-51 protection testing & energisation", short: "Commissioning & energisation", preds: ["T4"], o: 35, l: 55, p: 120 }
+  ],
+  costs: [
+    { id: "C1", name: "Power transformer & 132 kV switchgear supply", short: "Transformer & switchgear", fixed: { o: 7800000, l: 8900000, p: 11500000 }, perDay: { o: 800, l: 1200, p: 2400 } },
+    { id: "C2", name: "Civil works, foundations & control building", short: "Civil works", fixed: { o: 1900000, l: 2400000, p: 3600000 }, perDay: { o: 0, l: 0, p: 0 } },
+    { id: "C3", name: "Electrical installation, P&C and cabling labour", short: "Installation labour", fixed: { o: 2600000, l: 3200000, p: 4700000 }, perDay: { o: 0, l: 0, p: 0 } },
+    { id: "C4", name: "Commissioning, testing & utility witness fees", short: "Commissioning & testing", fixed: { o: 550000, l: 800000, p: 1400000 }, perDay: { o: 0, l: 0, p: 0 } },
+    { id: "C5", name: "Project management, site overhead, insurance & financing", short: "PM & site overhead", fixed: { o: 400000, l: 600000, p: 900000 }, perDay: { o: 2800, l: 3600, p: 5200 } }
+  ],
+  correlations: [
+    { id: "R1", a: "fix:C1", b: "dur:T2", rho: 0.5, note: "Tight transformer market: pricier and later" },
+    { id: "R2", a: "dur:T4", b: "fix:C3", rho: 0.6, note: "Longer installation, more labour" },
+    { id: "R3", a: "fix:C2", b: "fix:C3", rho: 0.4, note: "Shared site labour market" }
+  ]
+};
+
+function scnRangeFor(kind, o, p) {
+  if (kind === "days") {
+    const min = Math.max(0, Math.round(0.5 * o));
+    const max = Math.max(min + 10, Math.round(1.8 * p));
+    return { min, max, step: 1 };
+  } else if (kind === "money") {
+    const min = Math.floor(0.5 * o / 10000) * 10000;
+    const max = Math.max(min + 100000, Math.ceil(1.8 * p / 10000) * 10000);
+    return { min, max, step: 10000 };
+  } else if (kind === "rate") {
+    if (o === 0 && p === 0) {
+      return { min: 0, max: 2000, step: 25 };
+    }
+    const min = Math.floor(0.5 * o / 50) * 50;
+    const max = Math.max(min + 500, Math.ceil(1.8 * p / 50) * 50);
+    return { min, max, step: 50 };
+  }
+}
+
+function scnNextId(items, prefix) {
+  if (!items || items.length === 0) {
+    return prefix + "1";
+  }
+  let maxNum = 0;
+  for (const item of items) {
+    if (item.id.startsWith(prefix)) {
+      const numStr = item.id.slice(prefix.length);
+      const num = parseInt(numStr, 10);
+      if (!isNaN(num)) {
+        maxNum = Math.max(maxNum, num);
+      }
+    }
+  }
+  return prefix + (maxNum + 1);
+}
+
+function scnNewTask(scenario) {
+  const lastTask = scenario.tasks.length > 0 ? scenario.tasks[scenario.tasks.length - 1] : null;
+  return {
+    id: scnNextId(scenario.tasks, "T"),
+    name: "New activity",
+    short: "New activity",
+    preds: lastTask ? [lastTask.id] : [],
+    o: 20,
+    l: 30,
+    p: 50
+  };
+}
+
+function scnNewCost(scenario) {
+  return {
+    id: scnNextId(scenario.costs, "C"),
+    name: "New cost line",
+    short: "New cost line",
+    fixed: { o: 100000, l: 150000, p: 250000 },
+    perDay: { o: 0, l: 0, p: 0 }
+  };
+}
+
+function scnNewCorrelation(scenario) {
+  let a, b;
+  if (scenario.costs.length > 0) {
+    a = "fix:" + scenario.costs[0].id;
+    b = "dur:" + scenario.tasks[0].id;
+  } else {
+    a = "dur:" + scenario.tasks[0].id;
+    b = "dur:" + (scenario.tasks[1] ? scenario.tasks[1].id : scenario.tasks[0].id);
+  }
+  return {
+    id: scnNextId(scenario.correlations, "R"),
+    a,
+    b,
+    rho: 0.3,
+    note: ""
+  };
+}
+
+function scnInputOptions(scenario) {
+  const options = [];
+  for (const task of scenario.tasks) {
+    options.push({
+      key: "dur:" + task.id,
+      label: task.id + " · " + task.short + " — duration"
+    });
+  }
+  for (const cost of scenario.costs) {
+    options.push({
+      key: "fix:" + cost.id,
+      label: cost.id + " · " + cost.short + " — fixed cost"
+    });
+    const hasPerDay = cost.perDay.o !== 0 || cost.perDay.l !== 0 || cost.perDay.p !== 0;
+    if (hasPerDay) {
+      options.push({
+        key: "day:" + cost.id,
+        label: cost.id + " · " + cost.short + " — per-day cost"
+      });
+    }
+  }
+  return options;
+}
+
+function scnDescendants(tasks, id) {
+  const descendants = new Set();
+  const worklist = [id];
+
+  while (worklist.length > 0) {
+    const current = worklist.shift();
+    for (const task of tasks) {
+      if (task.preds && task.preds.includes(current) && !descendants.has(task.id)) {
+        descendants.add(task.id);
+        worklist.push(task.id);
+      }
+    }
+  }
+
+  return descendants;
+}
+
+function scnFmtRho(v) {
+  const abs = Math.abs(v).toFixed(2);
+  if (v > 0) {
+    return "+" + abs;
+  } else if (v < 0) {
+    return "−" + abs;
+  } else {
+    return abs;
+  }
+}
+
+function scnFmtMoney(v) {
+  return "$" + (v / 1e6).toFixed(2) + "M";
+}
+
+function scnFmtMoneyTick(v) {
+  const m = v / 1e6;
+  const rounded = Math.round(m);
+  const formatted = Math.abs(m - rounded) < 1e-9 ? rounded.toFixed(0) : m.toFixed(1);
+  return "$" + formatted + "M";
+}
+
+function scnFmtRate(v) {
+  return v === 0 ? "—" : "$" + (v / 1000).toFixed(1) + "k/d";
+}
+
+function scnFmtDays(v) {
+  return Math.round(v).toLocaleString("en-US") + " d";
+}
+
+function scnFmtMonths(v) {
+  return (v / 30.4375).toFixed(1) + " mo";
+}
+
+function scnFmtPct(v) {
+  return Math.round(v * 100) + "%";
+}
+
+function scnAddDays(isoDate, days) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + Math.round(days));
+  return date;
+}
+
+function scnFmtDate(isoDate, days) {
+  const date = scnAddDays(isoDate, days);
+  const monthAbbr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return date.getUTCDate() + " " + monthAbbr[date.getUTCMonth()] + " " + date.getUTCFullYear();
+}
+
+function scnFmtDateTick(isoDate, days) {
+  const date = scnAddDays(isoDate, days);
+  const monthAbbr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const twoDigitYear = String(date.getUTCFullYear()).slice(-2);
+  return monthAbbr[date.getUTCMonth()] + " " + twoDigitYear;
+}
+
+window.__scn = { scnDefaultScenario, scnRangeFor, scnNextId, scnNewTask, scnNewCost, scnNewCorrelation, scnInputOptions, scnDescendants, scnFmtRho, scnFmtMoney, scnFmtMoneyTick, scnFmtRate, scnFmtDays, scnFmtMonths, scnFmtPct, scnAddDays, scnFmtDate, scnFmtDateTick };
+
+</script>
+<script>
+function engMulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function engTriangularInv(u, a, b, c) {
+  if (c === a) return a;
+  const Fc = (b - a) / (c - a);
+  if (u < Fc) return a + Math.sqrt(u * (c - a) * (b - a));
+  return c - Math.sqrt((1 - u) * (c - a) * (c - b));
+}
+
+function engRandNormal(rng) {
+  let u1 = rng();
+  while (u1 <= 1e-12) u1 = rng();
+  const u2 = rng();
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function engSampleGamma(rng, k) {
+  if (k < 1) {
+    const u = rng();
+    return engSampleGamma(rng, k + 1) * Math.pow(u, 1 / k);
+  }
+  const d = k - 1 / 3;
+  const c_ = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    let x, v;
+    do {
+      x = engRandNormal(rng);
+      v = 1 + c_ * x;
+    } while (v <= 0);
+    v = v * v * v;
+    const u = rng();
+    const x2 = x * x;
+    if (u < 1 - 0.0331 * x2 * x2) return d * v;
+    if (Math.log(u) < 0.5 * x2 + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+
+function engSamplePert(rng, a, b, c) {
+  if (c === a) return a;
+  const mu = (a + 4 * b + c) / 6;
+  let alpha = 6 * ((mu - a) / (c - a));
+  let beta = 6 * ((c - mu) / (c - a));
+  if (alpha < 0.1) alpha = 0.1;
+  if (beta < 0.1) beta = 0.1;
+  const g1 = engSampleGamma(rng, alpha);
+  const g2 = engSampleGamma(rng, beta);
+  const betaSample = g1 / (g1 + g2);
+  return a + betaSample * (c - a);
+}
+
+// PERT shapes are 1 + 4(b-a)/(c-a) and 1 + 4(c-b)/(c-a), so both are >= 1 for any valid
+// estimate: the density is bounded and a tabulated inverse CDF is accurate. Returns null
+// for a degenerate estimate so the caller falls back to Marsaglia-Tsang.
+function engPertTable(a, b, c, size) {
+  const tab = new Float64Array(size);
+  if (c === a) {
+    tab.fill(a);
+    return tab;
+  }
+  const mu = (a + 4 * b + c) / 6;
+  const alpha = 6 * ((mu - a) / (c - a));
+  const beta = 6 * ((c - mu) / (c - a));
+  if (alpha < 1 || beta < 1) return null;
+  const grid = 4097;
+  const h = 1 / (grid - 1);
+  const cdf = new Float64Array(grid);
+  let prevPdf = Math.pow(0, alpha - 1);
+  for (let i = 1; i < grid; i++) {
+    const x = i * h;
+    const pdf = Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1);
+    cdf[i] = cdf[i - 1] + 0.5 * (prevPdf + pdf) * h;
+    prevPdf = pdf;
+  }
+  const total = cdf[grid - 1];
+  let j = 0;
+  for (let k = 0; k < size; k++) {
+    const target = (k / (size - 1)) * total;
+    while (j < grid - 2 && cdf[j + 1] < target) j++;
+    const span = cdf[j + 1] - cdf[j];
+    const f = span > 0 ? (target - cdf[j]) / span : 0;
+    tab[k] = a + (j + f) * h * (c - a);
+  }
+  return tab;
+}
+
+const engPertCache = new Map();
+
+function engPertTableCached(a, b, c) {
+  const key = a + "|" + b + "|" + c;
+  let tab = engPertCache.get(key);
+  if (tab === undefined) {
+    if (engPertCache.size > 400) engPertCache.clear();
+    tab = engPertTable(a, b, c, 2048);
+    engPertCache.set(key, tab);
+  }
+  return tab;
+}
+
+function engTableSample(tab, u) {
+  const last = tab.length - 1;
+  const pos = u * last;
+  const i = pos | 0;
+  if (i >= last) return tab[last];
+  return tab[i] + (pos - i) * (tab[i + 1] - tab[i]);
+}
+
+function engDraw(rng, dist, tab, a, b, c) {
+  if (dist === "triangular") return engTriangularInv(rng(), a, b, c);
+  if (tab) return engTableSample(tab, rng());
+  return engSamplePert(rng, a, b, c);
+}
+
+function engSample(rng, dist, a, b, c) {
+  if (dist === "triangular") return engTriangularInv(rng(), a, b, c);
+  return engSamplePert(rng, a, b, c);
+}
+
+function engDistMean(dist, a, b, c) {
+  if (dist === "triangular") return (a + b + c) / 3;
+  return (a + 4 * b + c) / 6;
+}
+
+function engPercentile(sortedAsc, p) {
+  const n = sortedAsc.length;
+  if (n === 1) return sortedAsc[0];
+  const idx = p * (n - 1);
+  const lo = Math.floor(idx);
+  if (lo >= n - 1) return sortedAsc[n - 1];
+  const frac = idx - lo;
+  return sortedAsc[lo] + frac * (sortedAsc[lo + 1] - sortedAsc[lo]);
+}
+
+function engStats(sortedAsc) {
+  const n = sortedAsc.length;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += sortedAsc[i];
+  return {
+    min: sortedAsc[0],
+    max: sortedAsc[n - 1],
+    mean: sum / n,
+    p10: engPercentile(sortedAsc, 0.1),
+    p50: engPercentile(sortedAsc, 0.5),
+    p80: engPercentile(sortedAsc, 0.8),
+    p90: engPercentile(sortedAsc, 0.9)
+  };
+}
+
+function engHistogram(values, binCount) {
+  const n = values.length;
+  let min = Infinity;
+  let max = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  const range = max - min;
+  const binWidth = range > 0 ? range / binCount : 1;
+  const counts = new Array(binCount).fill(0);
+  for (let i = 0; i < n; i++) {
+    let idx = range > 0 ? Math.floor((values[i] - min) / binWidth) : 0;
+    if (idx >= binCount) idx = binCount - 1;
+    if (idx < 0) idx = 0;
+    counts[idx]++;
+  }
+  const bins = new Array(binCount);
+  for (let i = 0; i < binCount; i++) {
+    const x0 = min + i * binWidth;
+    const x1 = min + (i + 1) * binWidth;
+    const count = counts[i];
+    const density = n > 0 && binWidth > 0 ? count / (n * binWidth) : 0;
+    bins[i] = { x0, x1, count, density };
+  }
+  return { bins, binWidth, min, max };
+}
+
+function engCdfPoints(sortedAsc, maxPoints) {
+  const mp = maxPoints === undefined ? 240 : maxPoints;
+  const n = sortedAsc.length;
+  if (n === 0) return [];
+  if (n === 1) return [{ x: sortedAsc[0], p: 1 }];
+  const count = n <= mp ? n : mp;
+  const points = [];
+  let lastIdx = -1;
+  for (let k = 0; k < count; k++) {
+    let idx = Math.round((k * (n - 1)) / (count - 1));
+    if (idx === lastIdx) continue;
+    lastIdx = idx;
+    points.push({ x: sortedAsc[idx], p: idx / (n - 1) });
+  }
+  return points;
+}
+
+function engTopoOrder(tasks) {
+  const indeg = {};
+  const adj = {};
+  for (let i = 0; i < tasks.length; i++) {
+    indeg[tasks[i].id] = 0;
+    adj[tasks[i].id] = [];
+  }
+  for (let i = 0; i < tasks.length; i++) {
+    const t = tasks[i];
+    for (let j = 0; j < t.preds.length; j++) {
+      adj[t.preds[j]].push(t.id);
+      indeg[t.id]++;
+    }
+  }
+  const queue = [];
+  for (let i = 0; i < tasks.length; i++) {
+    if (indeg[tasks[i].id] === 0) queue.push(tasks[i].id);
+  }
+  const order = [];
+  let qi = 0;
+  while (qi < queue.length) {
+    const id = queue[qi++];
+    order.push(id);
+    const succ = adj[id];
+    for (let j = 0; j < succ.length; j++) {
+      const s = succ[j];
+      indeg[s]--;
+      if (indeg[s] === 0) queue.push(s);
+    }
+  }
+  if (order.length !== tasks.length) throw new Error("Cycle detected in task network");
+  return order;
+}
+
+function engForwardPass(tasks, order, durations) {
+  const taskMap = {};
+  for (let i = 0; i < tasks.length; i++) taskMap[tasks[i].id] = tasks[i];
+  const es = {};
+  const ef = {};
+  let projectDuration = 0;
+  for (let i = 0; i < order.length; i++) {
+    const id = order[i];
+    const t = taskMap[id];
+    let maxEf = 0;
+    for (let j = 0; j < t.preds.length; j++) {
+      const pef = ef[t.preds[j]];
+      if (pef > maxEf) maxEf = pef;
+    }
+    es[id] = maxEf;
+    const d = durations[id];
+    ef[id] = maxEf + d;
+    if (ef[id] > projectDuration) projectDuration = ef[id];
+  }
+  return { es, ef, projectDuration };
+}
+
+function engBackwardPass(tasks, order, durations, ef, projectDuration) {
+  const successors = {};
+  for (let i = 0; i < tasks.length; i++) successors[tasks[i].id] = [];
+  for (let i = 0; i < tasks.length; i++) {
+    const t = tasks[i];
+    for (let j = 0; j < t.preds.length; j++) successors[t.preds[j]].push(t.id);
+  }
+  const lf = {};
+  const ls = {};
+  const float = {};
+  for (let i = order.length - 1; i >= 0; i--) {
+    const id = order[i];
+    const succ = successors[id];
+    let minLs;
+    if (succ.length === 0) {
+      minLs = projectDuration;
+    } else {
+      minLs = Infinity;
+      for (let j = 0; j < succ.length; j++) {
+        const sls = ls[succ[j]];
+        if (sls < minLs) minLs = sls;
+      }
+    }
+    lf[id] = minLs;
+    const d = durations[id];
+    ls[id] = minLs - d;
+    const es = ef[id] - d;
+    float[id] = ls[id] - es;
+  }
+  return { lf, ls, float };
+}
+
+function engEvaluateBase(model, overrides) {
+  const ov = overrides || {};
+  const dist = model.distribution;
+  const tasks = model.tasks;
+  const costs = model.costs;
+
+  const durations = {};
+  for (let i = 0; i < tasks.length; i++) {
+    const t = tasks[i];
+    const key = "dur:" + t.id;
+    durations[t.id] = Object.prototype.hasOwnProperty.call(ov, key) ? ov[key] : engDistMean(dist, t.o, t.l, t.p);
+  }
+
+  const order = engTopoOrder(tasks);
+  const fwd = engForwardPass(tasks, order, durations);
+  const bwd = engBackwardPass(tasks, order, durations, fwd.ef, fwd.projectDuration);
+  const duration = fwd.projectDuration;
+
+  let sumFixed = 0;
+  let sumPerDay = 0;
+  for (let i = 0; i < costs.length; i++) {
+    const c = costs[i];
+    const fixKey = "fix:" + c.id;
+    const fixedVal = Object.prototype.hasOwnProperty.call(ov, fixKey)
+      ? ov[fixKey]
+      : engDistMean(dist, c.fixed.o, c.fixed.l, c.fixed.p);
+    sumFixed += fixedVal;
+
+    const dayKey = "day:" + c.id;
+    let perDayVal;
+    if (Object.prototype.hasOwnProperty.call(ov, dayKey)) {
+      perDayVal = ov[dayKey];
+    } else if (c.perDay.o === 0 && c.perDay.l === 0 && c.perDay.p === 0) {
+      perDayVal = 0;
+    } else {
+      perDayVal = engDistMean(dist, c.perDay.o, c.perDay.l, c.perDay.p);
+    }
+    sumPerDay += perDayVal;
+  }
+
+  const cost = sumFixed + duration * sumPerDay;
+
+  const criticalIds = [];
+  for (let i = 0; i < tasks.length; i++) {
+    const id = tasks[i].id;
+    if (bwd.float[id] < 1e-6) criticalIds.push(id);
+  }
+
+  return { duration, cost, es: fwd.es, ef: fwd.ef, float: bwd.float, criticalIds };
+}
+
+function engRankWithSorted(values) {
+  const n = values.length;
+  const sorted = Float64Array.from(values).sort();
+  const ranks = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = values[i];
+    let lo = 0;
+    let hi = n;
+    while (lo < hi) {
+      const m = (lo + hi) >>> 1;
+      if (sorted[m] < v) lo = m + 1;
+      else hi = m;
+    }
+    let lo2 = lo;
+    let hi2 = n;
+    while (lo2 < hi2) {
+      const m = (lo2 + hi2) >>> 1;
+      if (sorted[m] <= v) lo2 = m + 1;
+      else hi2 = m;
+    }
+    // ties occupy sorted[lo .. lo2-1], i.e. 1-based ranks lo+1 .. lo2
+    ranks[i] = (lo + 1 + lo2) / 2;
+  }
+  return { ranks, sorted };
+}
+
+function engRank(values) {
+  return engRankWithSorted(values).ranks;
+}
+
+function engPearson(rx, ry) {
+  const n = rx.length;
+  let sumX = 0;
+  let sumY = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += rx[i];
+    sumY += ry[i];
+  }
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+  let cov = 0;
+  let varX = 0;
+  let varY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = rx[i] - meanX;
+    const dy = ry[i] - meanY;
+    cov += dx * dy;
+    varX += dx * dx;
+    varY += dy * dy;
+  }
+  if (varX === 0 || varY === 0) return 0;
+  return cov / Math.sqrt(varX * varY);
+}
+
+function engSpearman(xs, ys) {
+  return engPearson(engRank(xs), engRank(ys));
+}
+
+function engNormInv(p) {
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  const a1 = -3.969683028665376e+01, a2 = 2.209460984245205e+02, a3 = -2.759285104469687e+02,
+    a4 = 1.383577518672690e+02, a5 = -3.066479806614716e+01, a6 = 2.506628277459239e+00;
+  const b1 = -5.447609879822406e+01, b2 = 1.615858368580409e+02, b3 = -1.556989798598866e+02,
+    b4 = 6.680131188771972e+01, b5 = -1.328068155288572e+01;
+  const c1 = -7.784894002430293e-03, c2 = -3.223964580411365e-01, c3 = -2.400758277161838e+00,
+    c4 = -2.549732539343734e+00, c5 = 4.374664141464968e+00, c6 = 2.938163982698783e+00;
+  const d1 = 7.784695709041462e-03, d2 = 3.224671290700398e-01, d3 = 2.445134137142996e+00,
+    d4 = 3.754408661907416e+00;
+  const pLow = 0.02425;
+  const pHigh = 1 - pLow;
+  if (p < pLow) {
+    const q = Math.sqrt(-2 * Math.log(p));
+    return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+      ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+  }
+  if (p <= pHigh) {
+    const q = p - 0.5;
+    const r = q * q;
+    return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+      (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+  }
+  const q = Math.sqrt(-2 * Math.log(1 - p));
+  return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+    ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+}
+
+function engCholesky(A) {
+  const k = A.length;
+  const L = new Array(k);
+  for (let i = 0; i < k; i++) L[i] = new Array(k).fill(0);
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j <= i; j++) {
+      let sum = A[i][j];
+      for (let m = 0; m < j; m++) sum -= L[i][m] * L[j][m];
+      if (i === j) {
+        if (sum <= 1e-12) return null;
+        L[i][j] = Math.sqrt(sum);
+      } else {
+        L[i][j] = sum / L[j][j];
+      }
+    }
+  }
+  return L;
+}
+
+function engApplyCorrelation(series, pairs, rng) {
+  function choleskyRobust(C, k) {
+    let L = engCholesky(C);
+    if (L) return L;
+    for (let step = 1; step <= 20; step++) {
+      const lambda = step * 0.05;
+      const rep = new Array(k);
+      for (let i = 0; i < k; i++) {
+        rep[i] = new Array(k);
+        for (let j = 0; j < k; j++) rep[i][j] = (1 - lambda) * C[i][j] + (i === j ? lambda : 0);
+      }
+      L = engCholesky(rep);
+      if (L) return L;
+    }
+    return L;
+  }
+
+  function invertLowerTriangular(Q, k) {
+    const inv = new Array(k);
+    for (let i = 0; i < k; i++) inv[i] = new Array(k).fill(0);
+    for (let col = 0; col < k; col++) {
+      const x = new Array(k).fill(0);
+      for (let i = 0; i < k; i++) {
+        let sum = i === col ? 1 : 0;
+        for (let m = 0; m < i; m++) sum -= Q[i][m] * x[m];
+        x[i] = sum / Q[i][i];
+      }
+      for (let i = 0; i < k; i++) inv[i][col] = x[i];
+    }
+    return inv;
+  }
+
+  function matMul(A, B, k) {
+    const R = new Array(k);
+    for (let i = 0; i < k; i++) {
+      R[i] = new Array(k).fill(0);
+      for (let j = 0; j < k; j++) {
+        let sum = 0;
+        for (let m = 0; m < k; m++) sum += A[i][m] * B[m][j];
+        R[i][j] = sum;
+      }
+    }
+    return R;
+  }
+
+  const keySet = [];
+  const keyIndex = {};
+  for (let pi = 0; pi < pairs.length; pi++) {
+    const pr = pairs[pi];
+    if (!(pr.a in keyIndex)) {
+      keyIndex[pr.a] = keySet.length;
+      keySet.push(pr.a);
+    }
+    if (!(pr.b in keyIndex)) {
+      keyIndex[pr.b] = keySet.length;
+      keySet.push(pr.b);
+    }
+  }
+  const k = keySet.length;
+  const n = series[keySet[0]].length;
+
+  const C = new Array(k);
+  for (let i = 0; i < k; i++) {
+    C[i] = new Array(k).fill(0);
+    C[i][i] = 1;
+  }
+  for (let pi = 0; pi < pairs.length; pi++) {
+    const pr = pairs[pi];
+    const i = keyIndex[pr.a];
+    const j = keyIndex[pr.b];
+    const val = 2 * Math.sin((Math.PI * pr.rho) / 6);
+    C[i][j] = val;
+    C[j][i] = val;
+  }
+  const P = choleskyRobust(C, k);
+
+  const s = new Float64Array(n);
+  for (let i = 0; i < n; i++) s[i] = engNormInv((i + 1) / (n + 1));
+
+  const R = new Array(k);
+  for (let j = 0; j < k; j++) {
+    const col = Float64Array.from(s);
+    for (let m = col.length - 1; m > 0; m--) {
+      const idx = Math.floor(rng() * (m + 1));
+      const tmp = col[m];
+      col[m] = col[idx];
+      col[idx] = tmp;
+    }
+    R[j] = col;
+  }
+
+  const E = new Array(k);
+  for (let i = 0; i < k; i++) E[i] = new Array(k).fill(0);
+  for (let i = 0; i < k; i++) {
+    for (let j = i; j < k; j++) {
+      const c = engPearson(R[i], R[j]);
+      E[i][j] = c;
+      E[j][i] = c;
+    }
+  }
+  const Q = choleskyRobust(E, k);
+  const Qinv = invertLowerTriangular(Q, k);
+  const S = matMul(P, Qinv, k);
+
+  const Tcol = new Array(k);
+  for (let j = 0; j < k; j++) Tcol[j] = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < k; j++) {
+      let sum = 0;
+      for (let m = 0; m < k; m++) sum += S[j][m] * R[m][i];
+      Tcol[j][i] = sum;
+    }
+  }
+
+  const taken = new Uint32Array(n);
+  for (let j = 0; j < k; j++) {
+    const arr = series[keySet[j]];
+    const tcol = Tcol[j];
+    const sortedT = Float64Array.from(tcol).sort();
+    const sortedV = Float64Array.from(arr).sort();
+    taken.fill(0);
+    // rank of each row in T via binary search; `taken` hands tied values consecutive ranks
+    for (let i = 0; i < n; i++) {
+      const v = tcol[i];
+      let lo = 0;
+      let hi = n;
+      while (lo < hi) {
+        const m = (lo + hi) >>> 1;
+        if (sortedT[m] < v) lo = m + 1;
+        else hi = m;
+      }
+      arr[i] = sortedV[lo + taken[lo]++];
+    }
+  }
+}
+
+function engSimulate(model) {
+  const t0 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+  const tasks = model.tasks;
+  const costs = model.costs;
+  const dist = model.distribution;
+  const n = model.iterations;
+  const rng = engMulberry32(model.seed);
+
+  const taskCount = tasks.length;
+  const costCount = costs.length;
+
+  const idToIdx = {};
+  for (let i = 0; i < taskCount; i++) idToIdx[tasks[i].id] = i;
+
+  const topoIds = engTopoOrder(tasks);
+  const topoIdx = new Int32Array(taskCount);
+  for (let i = 0; i < taskCount; i++) topoIdx[i] = idToIdx[topoIds[i]];
+
+  const predLists = new Array(taskCount);
+  const succLists = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) {
+    predLists[i] = [];
+    succLists[i] = [];
+  }
+  for (let i = 0; i < taskCount; i++) {
+    const t = tasks[i];
+    for (let j = 0; j < t.preds.length; j++) {
+      const pi = idToIdx[t.preds[j]];
+      predLists[i].push(pi);
+      succLists[pi].push(i);
+    }
+  }
+  const predIdx = new Array(taskCount);
+  const succIdx = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) {
+    predIdx[i] = Int32Array.from(predLists[i]);
+    succIdx[i] = Int32Array.from(succLists[i]);
+  }
+
+  const oArr = new Float64Array(taskCount);
+  const lArr = new Float64Array(taskCount);
+  const pArr = new Float64Array(taskCount);
+  for (let i = 0; i < taskCount; i++) {
+    oArr[i] = tasks[i].o;
+    lArr[i] = tasks[i].l;
+    pArr[i] = tasks[i].p;
+  }
+
+  const fixO = new Float64Array(costCount);
+  const fixL = new Float64Array(costCount);
+  const fixP = new Float64Array(costCount);
+  const dayO = new Float64Array(costCount);
+  const dayL = new Float64Array(costCount);
+  const dayP = new Float64Array(costCount);
+  const dayActive = new Uint8Array(costCount);
+  for (let i = 0; i < costCount; i++) {
+    const c = costs[i];
+    fixO[i] = c.fixed.o;
+    fixL[i] = c.fixed.l;
+    fixP[i] = c.fixed.p;
+    dayO[i] = c.perDay.o;
+    dayL[i] = c.perDay.l;
+    dayP[i] = c.perDay.p;
+    dayActive[i] = c.perDay.o === 0 && c.perDay.l === 0 && c.perDay.p === 0 ? 0 : 1;
+  }
+
+  const pert = dist !== "triangular";
+  const durTab = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) durTab[i] = pert ? engPertTableCached(oArr[i], lArr[i], pArr[i]) : null;
+  const fixTab = new Array(costCount);
+  const dayTab = new Array(costCount);
+  for (let i = 0; i < costCount; i++) {
+    fixTab[i] = pert ? engPertTableCached(fixO[i], fixL[i], fixP[i]) : null;
+    dayTab[i] = pert && dayActive[i] ? engPertTableCached(dayO[i], dayL[i], dayP[i]) : null;
+  }
+
+  const durKeys = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) durKeys[i] = "dur:" + tasks[i].id;
+  const fixKeys = new Array(costCount);
+  const dayKeys = new Array(costCount);
+  for (let i = 0; i < costCount; i++) {
+    fixKeys[i] = "fix:" + costs[i].id;
+    dayKeys[i] = dayActive[i] ? "day:" + costs[i].id : null;
+  }
+
+  const costArr = new Float64Array(n);
+  const durationArr = new Float64Array(n);
+
+  const sampleSeries = {};
+  const durSample = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) {
+    durSample[i] = new Float64Array(n);
+    sampleSeries[durKeys[i]] = durSample[i];
+  }
+  const fixSample = new Array(costCount);
+  const daySample = new Array(costCount);
+  for (let i = 0; i < costCount; i++) {
+    fixSample[i] = new Float64Array(n);
+    sampleSeries[fixKeys[i]] = fixSample[i];
+    if (dayActive[i]) {
+      daySample[i] = new Float64Array(n);
+      sampleSeries[dayKeys[i]] = daySample[i];
+    } else {
+      daySample[i] = null;
+    }
+  }
+
+  const esBuf = new Float64Array(taskCount);
+  const efBuf = new Float64Array(taskCount);
+  const lsBuf = new Float64Array(taskCount);
+  const durBuf = new Float64Array(taskCount);
+  const criticalCount = new Float64Array(taskCount);
+
+  for (let iter = 0; iter < n; iter++) {
+    for (let i = 0; i < taskCount; i++) {
+      durSample[i][iter] = engDraw(rng, dist, durTab[i], oArr[i], lArr[i], pArr[i]);
+    }
+    for (let i = 0; i < costCount; i++) {
+      fixSample[i][iter] = engDraw(rng, dist, fixTab[i], fixO[i], fixL[i], fixP[i]);
+      if (dayActive[i]) {
+        daySample[i][iter] = engDraw(rng, dist, dayTab[i], dayO[i], dayL[i], dayP[i]);
+      }
+    }
+  }
+
+  const rawCorr = model.correlations || [];
+  const pairMap = {};
+  for (let i = 0; i < rawCorr.length; i++) {
+    const pr = rawCorr[i];
+    const a = pr.a;
+    const b = pr.b;
+    if (a === b) continue;
+    if (!Object.prototype.hasOwnProperty.call(sampleSeries, a)) continue;
+    if (!Object.prototype.hasOwnProperty.call(sampleSeries, b)) continue;
+    let rho = pr.rho;
+    if (!Number.isFinite(rho)) continue;
+    if (rho > 0.95) rho = 0.95;
+    if (rho < -0.95) rho = -0.95;
+    const pairKey = a < b ? a + "|" + b : b + "|" + a;
+    pairMap[pairKey] = { id: pr.id, a: a, b: b, rho: rho };
+  }
+  const validPairs = Object.keys(pairMap).map((k) => pairMap[k]);
+  const correlationActive = !!model.correlate && validPairs.length > 0;
+  if (correlationActive) engApplyCorrelation(sampleSeries, validPairs, rng);
+
+  for (let iter = 0; iter < n; iter++) {
+    for (let i = 0; i < taskCount; i++) durBuf[i] = durSample[i][iter];
+
+    let projectDuration = 0;
+    for (let k = 0; k < taskCount; k++) {
+      const i = topoIdx[k];
+      const preds = predIdx[i];
+      let maxEf = 0;
+      for (let j = 0; j < preds.length; j++) {
+        const v = efBuf[preds[j]];
+        if (v > maxEf) maxEf = v;
+      }
+      esBuf[i] = maxEf;
+      const ef = maxEf + durBuf[i];
+      efBuf[i] = ef;
+      if (ef > projectDuration) projectDuration = ef;
+    }
+
+    for (let k = taskCount - 1; k >= 0; k--) {
+      const i = topoIdx[k];
+      const succ = succIdx[i];
+      let minLs;
+      if (succ.length === 0) {
+        minLs = projectDuration;
+      } else {
+        minLs = Infinity;
+        for (let j = 0; j < succ.length; j++) {
+          const v = lsBuf[succ[j]];
+          if (v < minLs) minLs = v;
+        }
+      }
+      const ls = minLs - durBuf[i];
+      lsBuf[i] = ls;
+      const float = ls - esBuf[i];
+      if (float < 1e-6) criticalCount[i] += 1;
+    }
+
+    let sumFixed = 0;
+    let sumPerDay = 0;
+    for (let i = 0; i < costCount; i++) {
+      sumFixed += fixSample[i][iter];
+      if (dayActive[i]) sumPerDay += daySample[i][iter];
+    }
+
+    costArr[iter] = sumFixed + projectDuration * sumPerDay;
+    durationArr[iter] = projectDuration;
+  }
+
+  const costSorted = Float64Array.from(costArr).sort();
+  const durationSorted = Float64Array.from(durationArr).sort();
+  const costStats = engStats(costSorted);
+  const durationStats = engStats(durationSorted);
+  const bins = model.bins;
+  const costHist = engHistogram(costArr, bins);
+  const durationHist = engHistogram(durationArr, bins);
+  const costCdf = engCdfPoints(costSorted, 240);
+  const durationCdf = engCdfPoints(durationSorted, 240);
+
+  const criticality = new Array(taskCount);
+  for (let i = 0; i < taskCount; i++) {
+    criticality[i] = { id: tasks[i].id, short: tasks[i].short, index: criticalCount[i] / n };
+  }
+
+  const base = engEvaluateBase(model, {});
+
+  const allKeys = durKeys.concat(fixKeys, dayKeys.filter((k) => k !== null));
+
+  // Sensitivity statistics are capped at 10k runs so their cost stays flat as iterations grow.
+  const sensN = Math.min(n, 10000);
+  const costRanks = engRank(costArr.subarray(0, sensN));
+  const durationRanks = engRank(durationArr.subarray(0, sensN));
+  const inputInfo = {};
+  for (let ki = 0; ki < allKeys.length; ki++) {
+    const key = allKeys[ki];
+    const rs = engRankWithSorted(sampleSeries[key].subarray(0, sensN));
+    inputInfo[key] = { p10: engPercentile(rs.sorted, 0.1), p90: engPercentile(rs.sorted, 0.9), ranks: rs.ranks };
+  }
+
+  const appliedCorrelations = correlationActive
+    ? validPairs.map((pr) => ({
+        id: pr.id,
+        a: pr.a,
+        b: pr.b,
+        target: pr.rho,
+        achieved: engPearson(inputInfo[pr.a].ranks, inputInfo[pr.b].ranks)
+      }))
+    : [];
+
+  function computeTornado(outputField) {
+    const rows = [];
+    for (let ki = 0; ki < allKeys.length; ki++) {
+      const key = allKeys[ki];
+      let kind, label, id;
+      if (key.indexOf("dur:") === 0) {
+        id = key.slice(4);
+        kind = "duration";
+        label = tasks[idToIdx[id]].short;
+      } else if (key.indexOf("fix:") === 0) {
+        id = key.slice(4);
+        kind = "fixed";
+        const ci = costs.findIndex((c) => c.id === id);
+        label = costs[ci].short;
+      } else {
+        id = key.slice(4);
+        kind = "perDay";
+        const ci = costs.findIndex((c) => c.id === id);
+        label = costs[ci].short;
+      }
+      if (outputField === "duration" && kind !== "duration") continue;
+
+      const info = inputInfo[key];
+      const p10 = info.p10;
+      const p90 = info.p90;
+
+      const ovLow = {};
+      ovLow[key] = p10;
+      const ovHigh = {};
+      ovHigh[key] = p90;
+      const lowVal = engEvaluateBase(model, ovLow)[outputField];
+      const highVal = engEvaluateBase(model, ovHigh)[outputField];
+      const baseVal = base[outputField];
+      const corr = engPearson(info.ranks, outputField === "cost" ? costRanks : durationRanks);
+
+      rows.push({
+        key,
+        id,
+        label,
+        kind,
+        base: baseVal,
+        low: lowVal,
+        high: highVal,
+        swing: Math.abs(highVal - lowVal),
+        corr
+      });
+    }
+    rows.sort((a, b) => b.swing - a.swing);
+    return rows;
+  }
+
+  const tornadoCost = computeTornado("cost");
+  const tornadoDuration = computeTornado("duration");
+
+  const t1 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+
+  return {
+    n,
+    cost: costArr,
+    duration: durationArr,
+    costStats,
+    durationStats,
+    costHist,
+    durationHist,
+    costCdf,
+    durationCdf,
+    criticality,
+    base,
+    tornadoCost,
+    tornadoDuration,
+    appliedCorrelations,
+    elapsedMs: t1 - t0
+  };
+}
+
+window.__eng = {
+  engMulberry32,
+  engTriangularInv,
+  engSamplePert,
+  engSample,
+  engDistMean,
+  engPercentile,
+  engStats,
+  engHistogram,
+  engCdfPoints,
+  engTopoOrder,
+  engForwardPass,
+  engBackwardPass,
+  engEvaluateBase,
+  engSimulate,
+  engSpearman,
+  engPertTable,
+  engTableSample,
+  engRank,
+  engNormInv,
+  engCholesky,
+  engApplyCorrelation
+};
+
+</script>
+<script type="text/babel" data-presets="react">
+// Nice-tick step selection: 1 / 2 / 2.5 / 5 x 10^k, reused by every axis in this file.
+function ChartNiceTicks(min, max, count) {
+  if (!isFinite(min) || !isFinite(max)) return [0];
+  if (min > max) { const t = min; min = max; max = t; }
+  if (max - min < 1e-9) return [min];
+  const targetCount = Math.max(1, count || 5);
+  const rough = (max - min) / targetCount;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  let norm = rough / mag;
+  let step;
+  if (norm <= 1) step = 1;
+  else if (norm <= 2) step = 2;
+  else if (norm <= 2.5) step = 2.5;
+  else if (norm <= 5) step = 5;
+  else step = 10;
+  step *= mag;
+  if (!isFinite(step) || step <= 0) step = (max - min) / targetCount || 1;
+  const niceMin = Math.floor(min / step) * step;
+  const niceMax = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = niceMin; v <= niceMax + step / 2; v += step) {
+    ticks.push(Math.round(v / step) * step);
+  }
+  return ticks;
+}
+
+function ChartClampNum(v, lo, hi) {
+  if (lo > hi) return lo;
+  if (!isFinite(v)) return lo;
+  return Math.min(hi, Math.max(lo, v));
+}
+
+// Roughly one tick per 90px of plot width, never fewer than 3.
+function ChartXTickCount(plotWidth) {
+  if (!isFinite(plotWidth) || plotWidth <= 0) return 3;
+  return Math.max(3, Math.round(plotWidth / 90));
+}
+
+// Truncate `text` with a trailing ellipsis so it fits `maxWidth` px, estimating
+// `pxPerChar` px per character (6.2 for 11-11.5px text, 6.0 for 10px mono).
+function ChartTruncateToWidth(text, maxWidth, pxPerChar) {
+  const s = String(text == null ? '' : text);
+  const w = pxPerChar || 6.2;
+  if (!isFinite(maxWidth) || maxWidth <= 0) return '';
+  if (s.length * w <= maxWidth) return s;
+  const maxChars = Math.max(0, Math.floor(maxWidth / w) - 1);
+  return s.slice(0, maxChars) + '…';
+}
+
+function ChartLocalPoint(evt, svgEl) {
+  if (!svgEl || typeof svgEl.createSVGPoint !== 'function') return null;
+  const ctm = svgEl.getScreenCTM();
+  if (!ctm) return null;
+  const pt = svgEl.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  const loc = pt.matrixTransform(ctm.inverse());
+  return { x: loc.x, y: loc.y };
+}
+
+// r = {tl, tr, br, bl} corner radii; any shape with a non-finite/non-positive size renders nothing.
+function ChartRoundRectPath(x, y, w, h, r) {
+  if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h)) return '';
+  if (!(w > 0) || !(h > 0)) return '';
+  const rr = r || {};
+  const tl = Math.max(0, Math.min(rr.tl || 0, w / 2, h / 2));
+  const tr = Math.max(0, Math.min(rr.tr || 0, w / 2, h / 2));
+  const br = Math.max(0, Math.min(rr.br || 0, w / 2, h / 2));
+  const bl = Math.max(0, Math.min(rr.bl || 0, w / 2, h / 2));
+  return [
+    `M${x + tl},${y}`,
+    `H${x + w - tr}`,
+    tr > 0 ? `A${tr},${tr} 0 0 1 ${x + w},${y + tr}` : '',
+    `V${y + h - br}`,
+    br > 0 ? `A${br},${br} 0 0 1 ${x + w - br},${y + h}` : '',
+    `H${x + bl}`,
+    bl > 0 ? `A${bl},${bl} 0 0 1 ${x},${y + h - bl}` : '',
+    `V${y + tl}`,
+    tl > 0 ? `A${tl},${tl} 0 0 1 ${x + tl},${y}` : '',
+    'Z'
+  ].filter(Boolean).join(' ');
+}
+
+// P-marker chip layout: sort left to right, push each chip clear of its neighbour by 4 units,
+// then clamp the last chip inside the plot.
+function ChartLayoutChips(markers, xScale, plotLeft, plotRight) {
+  const chips = (markers || []).map((m) => {
+    const w = Math.max(28, 10 + String(m.label).length * 6.5);
+    return { label: m.label, cx: ChartClampNum(xScale(m.x), plotLeft, plotRight), w };
+  }).sort((a, b) => a.cx - b.cx);
+  for (let i = 1; i < chips.length; i++) {
+    const minCx = chips[i - 1].cx + chips[i - 1].w / 2 + chips[i].w / 2 + 4;
+    if (chips[i].cx < minCx) chips[i].cx = minCx;
+  }
+  if (chips.length) {
+    const last = chips[chips.length - 1];
+    const maxCx = plotRight - last.w / 2;
+    if (last.cx > maxCx) last.cx = maxCx;
+  }
+  return chips;
+}
+
+function ChartTooltip({ x, y, lines, plotLeft, plotRight }) {
+  const safeLines = lines && lines.length ? lines : [''];
+  const rawW = Math.max.apply(null, safeLines.map((l) => 6.2 * String(l).length));
+  const boxW = rawW + 16;
+  const boxH = safeLines.length * 15 + 12;
+  let boxX = x + 10;
+  if (boxX + boxW > plotRight) boxX = x - boxW - 10;
+  boxX = ChartClampNum(boxX, plotLeft, Math.max(plotLeft, plotRight - boxW));
+  let boxY = y - boxH - 10;
+  if (boxY < 0) boxY = y + 10;
+  return (
+    <g pointerEvents="none">
+      <rect x={boxX} y={boxY} width={boxW} height={boxH} rx={4}
+        style={{ fill: 'var(--chart-surface)', stroke: 'var(--chart-axis)' }} strokeWidth={1} />
+      {safeLines.map((l, i) => (
+        <text key={i} x={boxX + 8} y={boxY + 16 + i * 15} fontSize={11}
+          style={{ fill: 'var(--ink-1)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+          {l}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+function ChartDistribution({ hist, markers, formatX, formatCount, xTitle, height, width }) {
+  const W = (typeof width === 'number' && isFinite(width) && width > 0) ? width : 820;
+  const H = height || 230;
+  const fmtCount = formatCount || ((c) => c.toLocaleString() + ' runs');
+  const mk = markers || [];
+  const margin = { left: 64, right: 24, top: 18, bottom: 40 };
+  const plotLeft = margin.left, plotRight = W - margin.right;
+  const plotTop = margin.top, plotBottom = H - margin.bottom;
+  const plotWidth = Math.max(1, plotRight - plotLeft);
+  const plotHeight = Math.max(1, plotBottom - plotTop);
+
+  const bins = (hist && hist.bins) || [];
+  const domainMin = hist && isFinite(hist.min) ? hist.min : 0;
+  const domainMaxRaw = hist && isFinite(hist.max) ? hist.max : domainMin + 1;
+  const domainMax = domainMaxRaw - domainMin > 1e-9 ? domainMaxRaw : domainMin + 1;
+  const domainRange = domainMax - domainMin;
+  const xScale = (v) => plotLeft + ((v - domainMin) / domainRange) * plotWidth;
+  const binWidth = (hist && hist.binWidth) > 0 ? hist.binWidth : domainRange / Math.max(1, bins.length);
+
+  const maxCount = bins.reduce((m, b) => Math.max(m, b.count || 0), 0) || 1;
+
+  const svgRef = React.useRef(null);
+  const [hoverIdx, setHoverIdx] = React.useState(null);
+
+  function handleMove(evt) {
+    if (!bins.length) return;
+    const pt = ChartLocalPoint(evt, svgRef.current);
+    if (!pt) return;
+    const dataX = domainMin + ((pt.x - plotLeft) / plotWidth) * domainRange;
+    let idx = binWidth > 0 ? Math.floor((dataX - domainMin) / binWidth) : 0;
+    idx = ChartClampNum(idx, 0, bins.length - 1);
+    setHoverIdx(idx);
+  }
+
+  const yTicks = ChartNiceTicks(0, maxCount, 4).filter((t) => t >= -1e-6 && t <= maxCount + 1e-6);
+  const xTicks = ChartNiceTicks(domainMin, domainMax, ChartXTickCount(plotWidth)).filter((t) => t >= domainMin - 1e-6 && t <= domainMax + 1e-6);
+  const chips = ChartLayoutChips(mk, xScale, plotLeft, plotRight);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" ref={svgRef}>
+      {yTicks.map((t, i) => {
+        const y = plotBottom - (t / maxCount) * plotHeight;
+        return (
+          <g key={'y' + i}>
+            <line x1={plotLeft} x2={plotRight} y1={y} y2={y} fill="none" style={{ stroke: 'var(--chart-grid)' }} strokeWidth={1} />
+            <text x={plotLeft - 8} y={y + 3} textAnchor="end" fontSize={11}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {Math.round(t).toLocaleString()}
+            </text>
+          </g>
+        );
+      })}
+      {bins.map((b, i) => {
+        const x0 = xScale(b.x0), x1 = xScale(b.x1);
+        const x = Math.min(x0, x1) + 1;
+        const w = Math.max(0, Math.abs(x1 - x0) - 2);
+        const h = ((b.count || 0) / maxCount) * plotHeight;
+        const y = plotBottom - h;
+        const r = Math.min(4, h / 2, w / 2);
+        const d = ChartRoundRectPath(x, y, w, h, { tl: r, tr: r, br: 0, bl: 0 });
+        if (!d) return null;
+        const isHover = hoverIdx === i;
+        return <path key={i} d={d} style={{ fill: isHover ? 'var(--accent)' : 'var(--series-1)' }} />;
+      })}
+      <line x1={plotLeft} x2={plotRight} y1={plotBottom} y2={plotBottom} fill="none" style={{ stroke: 'var(--chart-axis)' }} strokeWidth={1} />
+      {xTicks.map((t, i) => (
+        <text key={'x' + i} x={xScale(t)} y={plotBottom + 14} textAnchor="middle" fontSize={11}
+          style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatX(t)}
+        </text>
+      ))}
+      {mk.map((m, i) => {
+        const lineX = ChartClampNum(xScale(m.x), plotLeft, plotRight);
+        return <line key={'l' + i} x1={lineX} x2={lineX} y1={plotTop} y2={plotBottom} fill="none"
+          strokeDasharray="4 3" style={{ stroke: 'var(--marker)' }} strokeWidth={1.5} />;
+      })}
+      {chips.map((c, i) => (
+        <g key={'c' + i}>
+          <rect x={c.cx - c.w / 2} y={plotTop + 2} width={c.w} height={16} rx={3} style={{ fill: 'var(--marker)' }} />
+          <text x={c.cx} y={plotTop + 14} textAnchor="middle" fontSize={10}
+            style={{ fill: 'var(--chart-surface)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+            {c.label}
+          </text>
+        </g>
+      ))}
+      <text x={plotLeft + plotWidth / 2} y={H - 6} textAnchor="middle" fontSize={11}
+        style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-body)', letterSpacing: '0.08em' }}>
+        {(xTitle || '').toUpperCase()}
+      </text>
+      {hoverIdx != null && bins[hoverIdx] && (
+        <ChartTooltip
+          x={xScale((bins[hoverIdx].x0 + bins[hoverIdx].x1) / 2)}
+          y={plotBottom - ((bins[hoverIdx].count || 0) / maxCount) * plotHeight}
+          plotLeft={plotLeft} plotRight={plotRight}
+          lines={[formatX(bins[hoverIdx].x0) + ' – ' + formatX(bins[hoverIdx].x1), fmtCount(bins[hoverIdx].count || 0)]}
+        />
+      )}
+      <rect x={plotLeft} y={plotTop} width={plotWidth} height={plotHeight} fill="transparent"
+        onPointerMove={handleMove} onPointerLeave={() => setHoverIdx(null)} />
+    </svg>
+  );
+}
+
+function ChartSCurve({ points, markers, formatX, xTitle, height, width }) {
+  const W = (typeof width === 'number' && isFinite(width) && width > 0) ? width : 820;
+  const H = height || 230;
+  const margin = { left: 64, right: 24, top: 18, bottom: 40 };
+  const plotLeft = margin.left, plotRight = W - margin.right;
+  const plotTop = margin.top, plotBottom = H - margin.bottom;
+  const plotWidth = Math.max(1, plotRight - plotLeft);
+  const plotHeight = Math.max(1, plotBottom - plotTop);
+
+  const pts = (points || []).filter((p) => isFinite(p.x) && isFinite(p.p));
+  const mk = markers || [];
+  const xMinRaw = pts.length ? pts[0].x : 0;
+  const xMaxRaw = pts.length ? pts[pts.length - 1].x : 1;
+  const domainMin = xMinRaw;
+  const domainMax = xMaxRaw - xMinRaw > 1e-9 ? xMaxRaw : xMinRaw + 1;
+  const domainRange = domainMax - domainMin;
+  const xScale = (v) => plotLeft + ((v - domainMin) / domainRange) * plotWidth;
+  const yScale = (p) => plotTop + plotHeight - ChartClampNum(p, 0, 1) * plotHeight;
+
+  const svgRef = React.useRef(null);
+  const [hover, setHover] = React.useState(null);
+
+  function handleMove(evt) {
+    if (pts.length < 2) return;
+    const pt = ChartLocalPoint(evt, svgRef.current);
+    if (!pt) return;
+    const dataX = domainMin + ((pt.x - plotLeft) / plotWidth) * domainRange;
+    if (dataX <= pts[0].x) { setHover({ x: pts[0].x, p: pts[0].p }); return; }
+    const lastPt = pts[pts.length - 1];
+    if (dataX >= lastPt.x) { setHover({ x: lastPt.x, p: lastPt.p }); return; }
+    let lo = 0, hi = pts.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid].x <= dataX) lo = mid; else hi = mid;
+    }
+    const a = pts[lo], b = pts[hi];
+    const t = b.x - a.x > 1e-9 ? (dataX - a.x) / (b.x - a.x) : 0;
+    setHover({ x: dataX, p: a.p + t * (b.p - a.p) });
+  }
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1];
+  const xTicks = ChartNiceTicks(domainMin, domainMax, ChartXTickCount(plotWidth)).filter((t) => t >= domainMin - 1e-6 && t <= domainMax + 1e-6);
+
+  const linePts = pts.map((p) => `${xScale(p.x)},${yScale(p.p)}`).join(' ');
+  const areaPath = pts.length >= 2
+    ? `M${xScale(pts[0].x)},${plotBottom} L${linePts.split(' ').join(' L')} L${xScale(pts[pts.length - 1].x)},${plotBottom} Z`
+    : '';
+
+  // Lay out each marker's label to the right of its dot (or left, if that would
+  // overflow the plot), then resolve vertical crowding bottom-up so no two
+  // labels (or a label and a leader line) come within 13px of each other.
+  const markerItems = mk.map((m) => {
+    const mx = xScale(m.x), my = yScale(m.p);
+    const labelW = 6.2 * String(m.label).length;
+    const overflow = mx + 8 + labelW > plotRight;
+    return { m, mx, my, overflow, ly: my - 6 };
+  }).sort((a, b) => b.ly - a.ly);
+  for (let i = 1; i < markerItems.length; i++) {
+    const below = markerItems[i - 1], above = markerItems[i];
+    if (below.ly - above.ly < 13) above.ly = below.ly - 13;
+  }
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" ref={svgRef}>
+      {yTicks.map((t, i) => {
+        const y = yScale(t);
+        return (
+          <g key={'y' + i}>
+            <line x1={plotLeft} x2={plotRight} y1={y} y2={y} fill="none" style={{ stroke: 'var(--chart-grid)' }} strokeWidth={1} />
+            <text x={plotLeft - 8} y={y + 3} textAnchor="end" fontSize={11}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {Math.round(t * 100) + '%'}
+            </text>
+          </g>
+        );
+      })}
+      {areaPath && <path d={areaPath} style={{ fill: 'var(--series-1-soft)' }} />}
+      {pts.length >= 2 && <polyline points={linePts} fill="none" style={{ stroke: 'var(--series-1)' }} strokeWidth={2} />}
+      {pts.length === 1 && <circle cx={xScale(pts[0].x)} cy={yScale(pts[0].p)} r={3} style={{ fill: 'var(--series-1)' }} />}
+      <line x1={plotLeft} x2={plotRight} y1={plotBottom} y2={plotBottom} fill="none" style={{ stroke: 'var(--chart-axis)' }} strokeWidth={1} />
+      {xTicks.map((t, i) => (
+        <text key={'x' + i} x={xScale(t)} y={plotBottom + 14} textAnchor="middle" fontSize={11}
+          style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatX(t)}
+        </text>
+      ))}
+      {markerItems.map((it, i) => (
+        <g key={'m' + i}>
+          <line x1={plotLeft} x2={it.mx} y1={it.my} y2={it.my} fill="none" style={{ stroke: 'var(--marker)' }} strokeWidth={1.5} strokeDasharray="4 3" />
+          <line x1={it.mx} x2={it.mx} y1={it.my} y2={plotBottom} fill="none" style={{ stroke: 'var(--marker)' }} strokeWidth={1.5} strokeDasharray="4 3" />
+          <circle cx={it.mx} cy={it.my} r={4} style={{ fill: 'var(--marker)' }} />
+          <text x={it.overflow ? it.mx - 8 : it.mx + 8} y={it.ly} textAnchor={it.overflow ? 'end' : 'start'} fontSize={11}
+            style={{ fill: 'var(--ink-2)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+            {it.m.label}
+          </text>
+        </g>
+      ))}
+      <text x={plotLeft + plotWidth / 2} y={H - 6} textAnchor="middle" fontSize={11}
+        style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-body)', letterSpacing: '0.08em' }}>
+        {(xTitle || '').toUpperCase()}
+      </text>
+      {hover && (
+        <g>
+          <line x1={plotLeft} x2={xScale(hover.x)} y1={yScale(hover.p)} y2={yScale(hover.p)} fill="none"
+            style={{ stroke: 'var(--ink-muted)' }} strokeWidth={1} strokeDasharray="2 2" />
+          <line x1={xScale(hover.x)} x2={xScale(hover.x)} y1={yScale(hover.p)} y2={plotBottom} fill="none"
+            style={{ stroke: 'var(--ink-muted)' }} strokeWidth={1} strokeDasharray="2 2" />
+          <circle cx={xScale(hover.x)} cy={yScale(hover.p)} r={3.5} style={{ fill: 'var(--accent)' }} />
+          <ChartTooltip x={xScale(hover.x)} y={yScale(hover.p)} plotLeft={plotLeft} plotRight={plotRight}
+            lines={[formatX(hover.x), Math.round(hover.p * 100) + '%']} />
+        </g>
+      )}
+      <rect x={plotLeft} y={plotTop} width={plotWidth} height={plotHeight} fill="transparent"
+        onPointerMove={handleMove} onPointerLeave={() => setHover(null)} />
+    </svg>
+  );
+}
+
+const ChartTornadoKindWord = { duration: 'duration', fixed: 'fixed cost', perDay: 'per-day cost' };
+
+function ChartTornado({ rows, base, mode, formatX, xTitle, maxRows, height, width }) {
+  const W = (typeof width === 'number' && isFinite(width) && width > 0) ? width : 820;
+  const mode_ = mode || 'swing';
+  const shown = (rows || []).slice(0, maxRows || 8);
+  const rowH = 34;
+  const margin = { left: Math.min(170, Math.round(0.36 * W)), right: 24, top: 18, bottom: 40 };
+  const H = height || (margin.top + shown.length * rowH + margin.bottom);
+  const plotLeft = margin.left, plotRight = W - margin.right;
+  const plotTop = margin.top, plotBottom = H - margin.bottom;
+  const plotWidth = Math.max(1, plotRight - plotLeft);
+  const plotHeight = Math.max(1, plotBottom - plotTop);
+  const baseVal = isFinite(base) ? base : 0;
+
+  let domainMin, domainMax;
+  if (mode_ === 'corr') {
+    domainMin = -1; domainMax = 1;
+  } else {
+    const vals = [baseVal];
+    shown.forEach((r) => { vals.push(r.low, r.high); });
+    domainMin = Math.min.apply(null, vals);
+    domainMax = Math.max.apply(null, vals);
+    if (domainMax - domainMin < 1e-9) {
+      const pad = Math.max(Math.abs(baseVal) * 0.05, 1);
+      domainMin -= pad; domainMax += pad;
+    }
+  }
+  const domainRange = domainMax - domainMin || 1;
+
+  // Reserve side margins for the direct end-labels (swing) / edge tick labels (corr)
+  // so they never clip against the viewBox, per the spec's ~58px each side.
+  const armMargin = Math.max(0, Math.min(58, plotWidth / 2 - 1));
+  const barLeft = plotLeft + armMargin;
+  const barRight = plotRight - armMargin;
+  const barWidth = Math.max(1, barRight - barLeft);
+  const xScale = (v) => barLeft + ((v - domainMin) / domainRange) * barWidth;
+
+  const svgRef = React.useRef(null);
+  const [hoverI, setHoverI] = React.useState(null);
+
+  function handleMove(evt) {
+    const pt = ChartLocalPoint(evt, svgRef.current);
+    if (!pt) return;
+    if (pt.y < plotTop || pt.y > plotBottom) { setHoverI(null); return; }
+    const idx = ChartClampNum(Math.floor((pt.y - plotTop) / rowH), 0, shown.length - 1);
+    if (!shown.length) { setHoverI(null); return; }
+    setHoverI(idx);
+  }
+
+  const armH = 16;
+  const labelMaxW = Math.max(10, margin.left - 14);
+
+  const baseX = xScale(baseVal);
+  const baseLabelText = formatX(baseVal);
+  const baseHalfW = 6.2 * String(baseLabelText).length / 2;
+  const swingTicks = mode_ === 'swing'
+    ? ChartNiceTicks(domainMin, domainMax, ChartXTickCount(barWidth)).filter((t) => t >= domainMin - 1e-6 && t <= domainMax + 1e-6)
+    : [];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" ref={svgRef}>
+      {mode_ === 'corr' && [-1, -0.5, 0, 0.5, 1].map((t, i) => {
+        const x = xScale(t);
+        return (
+          <g key={'g' + i}>
+            <line x1={x} x2={x} y1={plotTop} y2={plotBottom} fill="none" style={{ stroke: 'var(--chart-grid)' }} strokeWidth={1} />
+            <text x={x} y={plotBottom + 14} textAnchor="middle" fontSize={11}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {String(t)}
+            </text>
+          </g>
+        );
+      })}
+      {shown.map((row, i) => {
+        const rowY = plotTop + i * rowH;
+        const cy = rowY + rowH / 2;
+        const isHover = hoverI === i;
+        let bars = null, swingLabel = null;
+        const zeroSwing = mode_ === 'swing' && !(Math.abs(row.swing) > 1e-9);
+        if (mode_ === 'swing' && zeroSwing) {
+          swingLabel = (
+            <text x={baseX + 6} y={cy + 3.5} textAnchor="start" fontSize={10.5}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {formatX(0)}
+            </text>
+          );
+        } else if (mode_ === 'swing') {
+          const xB = xScale(baseVal);
+          const xLow = xScale(row.low);
+          const xHigh = xScale(row.high);
+          const lowW = Math.abs(xLow - xB);
+          const highW = Math.abs(xHigh - xB);
+          const lowRound = xLow > xB ? { tr: 4, br: 4 } : { tl: 4, bl: 4 };
+          const highRound = xHigh > xB ? { tr: 4, br: 4 } : { tl: 4, bl: 4 };
+          const dLow = ChartRoundRectPath(Math.min(xB, xLow), cy - armH / 2, lowW, armH, lowRound);
+          const dHigh = ChartRoundRectPath(Math.min(xB, xHigh), cy - armH / 2, highW, armH, highRound);
+          const longerIsHigh = Math.abs(row.high - baseVal) >= Math.abs(row.low - baseVal);
+          const endX = longerIsHigh ? xHigh : xLow;
+          const goingRight = longerIsHigh ? xHigh > xB : xLow > xB;
+          bars = (
+            <g>
+              {dLow && <path d={dLow} style={{ fill: 'var(--tor-low)' }} />}
+              {dHigh && <path d={dHigh} style={{ fill: 'var(--tor-high)' }} />}
+            </g>
+          );
+          swingLabel = (
+            <text x={endX + (goingRight ? 6 : -6)} y={cy + 3.5} textAnchor={goingRight ? 'start' : 'end'} fontSize={10.5}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {formatX(row.swing)}
+            </text>
+          );
+        } else {
+          const corr = isFinite(row.corr) ? row.corr : 0;
+          const x0 = xScale(0), x1 = xScale(corr);
+          const w = Math.abs(x1 - x0);
+          const round = x1 > x0 ? { tr: 4, br: 4 } : { tl: 4, bl: 4 };
+          const d = ChartRoundRectPath(Math.min(x0, x1), cy - armH / 2, w, armH, round);
+          bars = d ? <path d={d} style={{ fill: corr >= 0 ? 'var(--tor-high)' : 'var(--tor-low)' }} /> : null;
+        }
+        const labelText = ChartTruncateToWidth(row.label, labelMaxW, 6.2);
+        const subText = ChartTruncateToWidth((row.id || '') + ' · ' + (ChartTornadoKindWord[row.kind] || row.kind || ''), labelMaxW, 6.0);
+        return (
+          <g key={row.key || i}>
+            {isHover && <rect x={0} y={rowY} width={W} height={rowH} style={{ fill: 'var(--chart-grid)' }} opacity={0.4} />}
+            <text x={plotLeft - 10} y={cy - 4} textAnchor="end" fontSize={11.5}
+              style={{ fill: 'var(--ink-2)', fontFamily: 'var(--font-body)' }}>
+              {labelText}
+            </text>
+            <text x={plotLeft - 10} y={cy + 9} textAnchor="end" fontSize={10}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)' }}>
+              {subText}
+            </text>
+            {bars}
+            {swingLabel}
+          </g>
+        );
+      })}
+      {mode_ === 'swing' && (
+        <g>
+          <line x1={baseX} x2={baseX} y1={plotTop} y2={plotBottom} fill="none"
+            style={{ stroke: 'var(--chart-axis)' }} strokeWidth={1.5} />
+          {swingTicks.map((t, i) => {
+            const tx = xScale(t);
+            const label = formatX(t);
+            const halfW = 6.2 * String(label).length / 2;
+            const gap = Math.abs(tx - baseX) - halfW - baseHalfW;
+            if (gap < 8) return null;
+            return (
+              <text key={'t' + i} x={tx} y={plotBottom + 14} textAnchor="middle" fontSize={11}
+                style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                {label}
+              </text>
+            );
+          })}
+          <text x={baseX} y={plotBottom + 14} textAnchor="middle" fontSize={11}
+            style={{ fill: 'var(--ink-2)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+            {baseLabelText}
+          </text>
+        </g>
+      )}
+      <text x={plotLeft + plotWidth / 2} y={H - 6} textAnchor="middle" fontSize={11}
+        style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-body)', letterSpacing: '0.08em' }}>
+        {(mode_ === 'corr' ? 'RANK CORRELATION' : (xTitle || '')).toUpperCase()}
+      </text>
+      {hoverI != null && shown[hoverI] && (
+        <ChartTooltip
+          x={xScale(mode_ === 'corr' ? shown[hoverI].corr : baseVal)}
+          y={plotTop + hoverI * rowH + rowH / 2}
+          plotLeft={plotLeft} plotRight={plotRight}
+          lines={[
+            shown[hoverI].label,
+            'low ' + formatX(shown[hoverI].low),
+            'base ' + formatX(baseVal),
+            'high ' + formatX(shown[hoverI].high),
+            'corr ' + (isFinite(shown[hoverI].corr) ? shown[hoverI].corr.toFixed(2) : '—')
+          ]}
+        />
+      )}
+      {shown.length > 0 && (
+        <rect x={0} y={plotTop} width={W} height={plotHeight} fill="transparent"
+          onPointerMove={handleMove} onPointerLeave={() => setHoverI(null)} />
+      )}
+    </svg>
+  );
+}
+
+function ChartCriticality({ items, formatPct, height, width }) {
+  const W = (typeof width === 'number' && isFinite(width) && width > 0) ? width : 820;
+  const rows = items || [];
+  const rowH = 28;
+  const H = height || (32 + rows.length * rowH);
+  const labelW = Math.min(190, Math.round(0.4 * W));
+  const margin = { left: labelW, right: 56, top: 8 };
+  const plotLeft = margin.left, plotRight = W - margin.right;
+  const plotWidth = Math.max(1, plotRight - plotLeft);
+  const fmtPct = formatPct || ((v) => Math.round(ChartClampNum(v, 0, 1) * 100) + '%');
+  const labelMaxW = Math.max(10, margin.left - 14);
+
+  const [hoverI, setHoverI] = React.useState(null);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img">
+      {rows.map((it, i) => {
+        const y = margin.top + i * rowH;
+        const cy = y + rowH / 2;
+        const idx = ChartClampNum(it.index, 0, 1);
+        const barW = idx * plotWidth;
+        const opacity = Math.max(0.25, idx);
+        const barH = 12;
+        const d = ChartRoundRectPath(plotLeft, cy - barH / 2, Math.max(barW, 0.01), barH, { tl: 3, tr: 3, br: 3, bl: 3 });
+        const shortText = ChartTruncateToWidth(it.short, labelMaxW, 6.2);
+        return (
+          <g key={it.id || i} onPointerEnter={() => setHoverI(i)} onPointerLeave={() => setHoverI(null)}>
+            <text x={margin.left - 10} y={cy + 4} textAnchor="end" fontSize={11}
+              style={{ fill: 'var(--ink-2)', fontFamily: 'var(--font-body)' }}>
+              {shortText}
+            </text>
+            <rect x={plotLeft} y={cy - barH / 2} width={plotWidth} height={barH} rx={3} style={{ fill: 'var(--chart-grid)' }} />
+            {barW > 0 && <path d={d} style={{ fill: 'var(--series-1)', fillOpacity: opacity }} />}
+            <text x={plotRight + 8} y={cy + 4} fontSize={11}
+              style={{ fill: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+              {fmtPct(idx)}
+            </text>
+            {hoverI === i && (
+              <ChartTooltip x={plotLeft + barW} y={cy} plotLeft={plotLeft} plotRight={W}
+                lines={[it.short || '', it.id || '', fmtPct(idx)]} />
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+</script>
+<script type="text/babel" data-presets="react">
+function PanelClampTriple(value, field, rawValue, bounds) {
+  const clamped = Math.min(bounds.max, Math.max(bounds.min, rawValue));
+  let { o, l, p } = value;
+  if (field === "o") {
+    o = clamped;
+    if (o > l) l = o;
+    if (l > p) p = l;
+  } else if (field === "l") {
+    l = clamped;
+    if (l < o) o = l;
+    if (l > p) p = l;
+  } else if (field === "p") {
+    p = clamped;
+    if (p < l) l = p;
+    if (l < o) o = l;
+  }
+  return { o, l, p };
+}
+
+function PanelThreePoint({ label, ariaName, value, rangeFor, unit, format, onChange }) {
+  const { o, l, p } = value;
+  const [range, setRange] = React.useState(() => rangeFor(o, p));
+  const [drafts, setDrafts] = React.useState({});
+
+  const rebase = () => setRange(rangeFor(value.o, value.p));
+
+  const effRange = {
+    min: Math.min(range.min, o),
+    max: Math.max(range.max, p),
+    step: range.step,
+  };
+
+  const onSlide = (field) => (e) => {
+    const raw = Number(e.target.value);
+    onChange(PanelClampTriple(value, field, raw, effRange));
+  };
+
+  const onFocusNum = (field) => () => {
+    setDrafts((d) => ({ ...d, [field]: unit.toInput(value[field]) }));
+  };
+
+  const onChangeNum = (field) => (e) => {
+    const v = e.target.value;
+    setDrafts((d) => ({ ...d, [field]: v }));
+  };
+
+  const clearDraft = (field) => {
+    setDrafts((d) => {
+      const next = { ...d };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const commit = (field) => {
+    const draftStr = drafts[field];
+    if (draftStr === undefined) return;
+    const trimmed = draftStr.trim();
+    let parsed;
+    let revert = trimmed === "";
+    if (!revert) {
+      parsed = unit.fromInput(trimmed);
+      if (!Number.isFinite(parsed) || parsed < 0) revert = true;
+    }
+    if (revert) {
+      clearDraft(field);
+      return;
+    }
+    const next = PanelClampTriple(value, field, parsed, { min: 0, max: Infinity });
+    onChange(next);
+    clearDraft(field);
+    setRange(rangeFor(next.o, next.p));
+  };
+
+  const onKeyDownNum = (field) => (e) => {
+    if (e.key === "Enter") {
+      commit(field);
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      clearDraft(field);
+      e.currentTarget.blur();
+    }
+  };
+
+  const onBlurNum = (field) => () => {
+    commit(field);
+  };
+
+  const lines = [
+    { field: "o", letter: "O", title: "Optimistic", v: o, aria: `${ariaName} — optimistic` },
+    { field: "l", letter: "L", title: "Most likely", v: l, aria: `${ariaName} — most likely` },
+    { field: "p", letter: "P", title: "Pessimistic", v: p, aria: `${ariaName} — pessimistic` },
+  ];
+
+  return (
+    <div className="tp">
+      <div className="tp-caption">{label}</div>
+      {lines.map((row) => {
+        const draftVal = drafts[row.field] !== undefined ? drafts[row.field] : unit.toInput(value[row.field]);
+        return (
+          <div className="tp-line" key={row.field}>
+            <span className="tp-label" title={row.title}>{row.letter}</span>
+            <input
+              type="range"
+              className="panel-range"
+              min={effRange.min}
+              max={effRange.max}
+              step={effRange.step}
+              value={row.v}
+              aria-label={row.aria}
+              aria-valuetext={format(row.v)}
+              onChange={onSlide(row.field)}
+              onPointerUp={rebase}
+              onKeyUp={rebase}
+            />
+            <span className="tp-entry">
+              <input
+                type="text"
+                inputMode="decimal"
+                className="tp-num"
+                aria-label={`${row.aria} value`}
+                value={draftVal}
+                onFocus={onFocusNum(row.field)}
+                onChange={onChangeNum(row.field)}
+                onKeyDown={onKeyDownNum(row.field)}
+                onBlur={onBlurNum(row.field)}
+              />
+              <span className="tp-unit">{unit.suffix}</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PanelTaskRow({ task, allTasks, allowedPreds, criticality, canRemove, onChange, onRemove, rangeFor, unit, formatDays, formatPct }) {
+  const chipClass = criticality >= 0.5 ? "chip chip-crit-high" : "chip chip-crit-low";
+
+  const togglePred = (id) => {
+    const has = task.preds.includes(id);
+    const nextIds = has ? task.preds.filter((x) => x !== id) : [...task.preds, id];
+    const ordered = allTasks.map((t) => t.id).filter((tid) => nextIds.includes(tid));
+    onChange({ preds: ordered });
+  };
+
+  return (
+    <div className="prow">
+      <div className="prow-head">
+        <input
+          type="text"
+          className="prow-name"
+          value={task.short}
+          aria-label={`Name of ${task.id}`}
+          onChange={(e) => onChange({ short: e.target.value, name: e.target.value })}
+        />
+        <span className="prow-id">{task.id}</span>
+        {criticality !== undefined && (
+          <span className={chipClass}>{formatPct(criticality)} critical</span>
+        )}
+        {canRemove && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Remove ${task.id}`}
+            title="Remove activity"
+            onClick={onRemove}
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <PanelThreePoint
+        label="Duration, days"
+        ariaName={`${task.short} duration`}
+        value={{ o: task.o, l: task.l, p: task.p }}
+        rangeFor={rangeFor}
+        unit={unit}
+        format={formatDays}
+        onChange={(next) => onChange(next)}
+      />
+      <div className="prow-meta pred-chips">
+        After
+        {allTasks
+          .filter((t) => t.id !== task.id)
+          .map((t) => {
+            const selected = task.preds.includes(t.id);
+            const disabled = !selected && !allowedPreds.includes(t.id);
+            const cls = "pred-chip" + (selected ? " is-on" : "");
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={cls}
+                title={t.short}
+                aria-pressed={selected}
+                disabled={disabled}
+                onClick={() => togglePred(t.id)}
+              >
+                {t.id}
+              </button>
+            );
+          })}
+        {task.preds.length === 0 && <span>starts immediately</span>}
+      </div>
+    </div>
+  );
+}
+
+function PanelCostRow({ cost, canRemove, onChange, onRemove, rangeFixed, rangePerDay, unitMoney, unitRate, formatMoney, formatRate }) {
+  const [open, setOpen] = React.useState(cost.perDay.l > 0);
+  const allZero = cost.perDay.o === 0 && cost.perDay.l === 0 && cost.perDay.p === 0;
+  const disclosureText = allZero
+    ? "Add a per-day cost"
+    : "Per-day cost · " + formatRate(cost.perDay.l);
+
+  return (
+    <div className="prow">
+      <div className="prow-head">
+        <input
+          type="text"
+          className="prow-name"
+          value={cost.short}
+          aria-label={`Name of ${cost.id}`}
+          onChange={(e) => onChange({ short: e.target.value, name: e.target.value })}
+        />
+        <span className="prow-id">{cost.id}</span>
+        {canRemove && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Remove ${cost.id}`}
+            title="Remove cost line"
+            onClick={onRemove}
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <PanelThreePoint
+        label="Fixed cost, US$"
+        ariaName={`${cost.short} fixed cost`}
+        value={cost.fixed}
+        rangeFor={rangeFixed}
+        unit={unitMoney}
+        format={formatMoney}
+        onChange={(next) => onChange({ fixed: next })}
+      />
+      <button
+        type="button"
+        className="disclosure"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        {disclosureText}
+      </button>
+      {open && (
+        <PanelThreePoint
+          label="Per-day cost, US$/day"
+          ariaName={`${cost.short} per-day cost`}
+          value={cost.perDay}
+          rangeFor={rangePerDay}
+          unit={unitRate}
+          format={formatRate}
+          onChange={(next) => onChange({ perDay: next })}
+        />
+      )}
+    </div>
+  );
+}
+
+function PanelCorrelations({ correlations, options, achieved, enabled, onToggle, onChange, onRemove, onAdd, formatRho }) {
+  return (
+    <div className="corr-list">
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onToggle(e.target.checked)}
+        />
+        Apply correlations
+      </label>
+      {correlations.map((c) => {
+        const rowClass = "corr-row" + (enabled ? "" : " is-off");
+        const sameInput = c.a === c.b;
+        const achievedVal = achieved ? achieved[c.id] : undefined;
+        return (
+          <div className={rowClass} key={c.id}>
+            <div className="prow-head">
+              <span className="prow-id">{c.id}</span>
+              <span className="corr-meta">{c.note ? c.note : "Custom pair"}</span>
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={`Remove ${c.id}`}
+                title="Remove correlation"
+                onClick={() => onRemove(c.id)}
+              >
+                ×
+              </button>
+            </div>
+            <select
+              className="corr-select"
+              aria-label={`First input of ${c.id}`}
+              value={c.a}
+              onChange={(e) => onChange(c.id, { a: e.target.value })}
+            >
+              {options.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+            <select
+              className="corr-select"
+              aria-label={`Second input of ${c.id}`}
+              value={c.b}
+              onChange={(e) => onChange(c.id, { b: e.target.value })}
+            >
+              {options.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+            <div className="tp-line">
+              <span className="tp-label" title="Rank correlation">ρ</span>
+              <input
+                type="range"
+                className="panel-range"
+                min={-0.9}
+                max={0.9}
+                step={0.05}
+                value={c.rho}
+                aria-label={`Correlation ${c.id}`}
+                onChange={(e) => onChange(c.id, { rho: Number(e.target.value) })}
+              />
+              <span className="tp-value">{formatRho(c.rho)}</span>
+            </div>
+            {sameInput ? (
+              <div className="corr-meta">Pick two different inputs</div>
+            ) : (
+              enabled && Number.isFinite(achievedVal) && (
+                <div className="corr-meta">{"achieved " + formatRho(achievedVal)}</div>
+              )
+            )}
+          </div>
+        );
+      })}
+      <button type="button" className="btn btn-add" onClick={onAdd}>
+        + Add correlation
+      </button>
+    </div>
+  );
+}
+
+function PanelProject({ name, startDate, onChange }) {
+  return (
+    <div className="ctrl">
+      <label className="field">
+        <span className="field-label">Project name</span>
+        <input
+          type="text"
+          className="field-input"
+          value={name}
+          onChange={(e) => onChange({ name: e.target.value })}
+        />
+      </label>
+      <label className="field">
+        <span className="field-label">Start date</span>
+        <input
+          type="date"
+          className="field-input"
+          value={startDate}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(v)) onChange({ startDate: v });
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+function PanelControls({ settings, onChange, onReset, onResample, elapsedMs }) {
+  const runsLabel = settings.iterations.toLocaleString("en-US") + " runs";
+
+  return (
+    <div className="ctrl">
+      <div className="ctrl-row">
+        <div className="control-label">
+          <span>Iterations</span>
+          <span>{runsLabel}</span>
+        </div>
+        <input
+          type="range"
+          className="panel-range"
+          min={1000}
+          max={50000}
+          step={1000}
+          value={settings.iterations}
+          aria-label="Iterations"
+          onChange={(e) => onChange({ iterations: Number(e.target.value) })}
+        />
+      </div>
+      <div className="ctrl-row">
+        <div className="control-label">
+          <span>Distribution</span>
+        </div>
+        <div className="seg">
+          <button
+            type="button"
+            className={"seg-btn" + (settings.distribution === "pert" ? " is-on" : "")}
+            aria-pressed={settings.distribution === "pert"}
+            onClick={() => onChange({ distribution: "pert" })}
+          >
+            PERT
+          </button>
+          <button
+            type="button"
+            className={"seg-btn" + (settings.distribution === "triangular" ? " is-on" : "")}
+            aria-pressed={settings.distribution === "triangular"}
+            onClick={() => onChange({ distribution: "triangular" })}
+          >
+            Triangular
+          </button>
+        </div>
+      </div>
+      <div className="ctrl-actions">
+        <button type="button" className="btn btn-secondary" onClick={onReset}>
+          Reset to baseline
+        </button>
+        <button type="button" className="btn btn-secondary" onClick={onResample}>
+          Resample
+        </button>
+      </div>
+      <div className="muted">
+        {runsLabel + " · " + Math.round(elapsedMs) + " ms"}
+      </div>
+    </div>
+  );
+}
+
+</script>
+<script type="text/babel" data-presets="react">
+const AppSettingsBaseline = { iterations: 10000, seed: 20261001, distribution: "pert", bins: 40, correlate: true };
+const AppAuthor = { name: "Ayman Khayat", linkedin: "https://www.linkedin.com/in/ayman-khayat-350b4b335" };
+const AppMono = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
+const AppDisplay = { fontFamily: "var(--font-display)", fontWeight: 600 };
+
+const AppUnitDays = { suffix: "d", toInput: (v) => String(Math.round(v)), fromInput: (s) => Math.round(Number(s)) };
+const AppUnitMoney = { suffix: "M", toInput: (v) => (v / 1e6).toFixed(2), fromInput: (s) => Math.round(Number(s) * 1e6) };
+const AppUnitRate = { suffix: "k/d", toInput: (v) => (v / 1000).toFixed(1), fromInput: (s) => Math.round(Number(s) * 1000) };
+const AppRangeDays = (o, p) => scnRangeFor("days", o, p);
+const AppRangeMoney = (o, p) => scnRangeFor("money", o, p);
+const AppRangeRate = (o, p) => scnRangeFor("rate", o, p);
+
+function AppLikelyOverrides(model) {
+  const o = {};
+  for (const t of model.tasks) o["dur:" + t.id] = t.l;
+  for (const c of model.costs) {
+    o["fix:" + c.id] = c.fixed.l;
+    o["day:" + c.id] = c.perDay.l;
+  }
+  return o;
+}
+
+function AppJointP80(r) {
+  const cp = r.costStats.p80;
+  const dp = r.durationStats.p80;
+  let hit = 0;
+  for (let i = 0; i < r.n; i++) {
+    if (r.cost[i] <= cp && r.duration[i] <= dp) hit++;
+  }
+  return hit / r.n;
+}
+
+function AppMarkers(stats) {
+  return [
+    { label: "P50", x: stats.p50, p: 0.5 },
+    { label: "P80", x: stats.p80, p: 0.8 },
+    { label: "P90", x: stats.p90, p: 0.9 },
+  ];
+}
+
+function AppSigned(v, fmt) {
+  return (v < 0 ? "−" : "+") + fmt(Math.abs(v));
+}
+
+function AppWrapLabel(text, max) {
+  if (text.length <= max) return [text];
+  const mid = text.length / 2;
+  let best = -1;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === " " && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+  }
+  return best < 0 ? [text] : [text.slice(0, best), text.slice(best + 1)];
+}
+
+function AppMeasure({ children }) {
+  const ref = React.useRef(null);
+  const [width, setWidth] = React.useState(0);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    const update = () => setWidth(Math.floor(el.getBoundingClientRect().width));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} className="measure">{width > 0 ? children(width) : null}</div>;
+}
+
+function AppFigure({ num, title, note, children }) {
+  return (
+    <figure className="fig">
+      <figcaption className="fig-head">
+        <span className="fig-num">Fig. {num}</span>
+        <span className="fig-title">{title}</span>
+      </figcaption>
+      {children}
+      {note ? <p className="fig-note">{note}</p> : null}
+    </figure>
+  );
+}
+
+function AppVerdict({ r, point, start }) {
+  const cs = r.costStats;
+  const ds = r.durationStats;
+  const joint = AppJointP80(r);
+  const rows = [
+    { label: "Total cost", fmt: scnFmtMoney, point: point.cost, s: cs },
+    { label: "Completion date", fmt: (d) => scnFmtDate(start, d), point: point.duration, s: ds },
+    { label: "Duration", fmt: (d) => scnFmtDays(d) + " · " + scnFmtMonths(d), point: point.duration, s: ds },
+  ];
+  return (
+    <section className="verdict" aria-label="Confidence levels">
+      <div className="verdict-figures">
+        <div className="vf">
+          <span className="vf-label">P80 completion</span>
+          <span className="vf-value">{scnFmtDate(start, ds.p80)}</span>
+          <span className="vf-delta">
+            {AppSigned(ds.p80 - point.duration, scnFmtDays)} of schedule contingency over the point estimate
+          </span>
+        </div>
+        <div className="vf">
+          <span className="vf-label">P80 total cost</span>
+          <span className="vf-value">{scnFmtMoney(cs.p80)}</span>
+          <span className="vf-delta">
+            {AppSigned(cs.p80 - point.cost, scnFmtMoney)} of cost contingency over the point estimate
+          </span>
+        </div>
+        <div className="vf vf-joint">
+          <span className="vf-label">Both P80 targets met</span>
+          <span className="vf-value">{scnFmtPct(joint)}</span>
+          <span className="vf-delta">
+            of runs land inside both at once. Each P80 is an 80% level on its own, not together.
+          </span>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table className="ptable">
+          <thead>
+            <tr>
+              <th scope="col"><span className="sr">Measure</span></th>
+              <th scope="col">Point estimate</th>
+              <th scope="col">P10</th>
+              <th scope="col">P50</th>
+              <th scope="col" className="is-p80">P80</th>
+              <th scope="col">P90</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <th scope="row">{row.label}</th>
+                <td>{row.fmt(row.point)}</td>
+                <td>{row.fmt(row.s.p10)}</td>
+                <td>{row.fmt(row.s.p50)}</td>
+                <td className="is-p80">{row.fmt(row.s.p80)}</td>
+                <td>{row.fmt(row.s.p90)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="verdict-note">
+        The point estimate uses every most-likely value. It lands below P50 because the ranges skew late and
+        expensive, and wherever two paths merge the later one always governs. P80 is the usual funding level
+        for a sanctioned capital project.
+      </p>
+    </section>
+  );
+}
+
+function AppNetwork({ tasks, crit, width }) {
+  const nodeH = 60;
+  const pad = 12;
+  const gapX = 26;
+  const gapY = 20;
+  const order = engTopoOrder(tasks);
+  const byId = Object.fromEntries(tasks.map((t) => [t.id, t]));
+  const level = {};
+  for (const id of order) {
+    const preds = byId[id].preds;
+    level[id] = preds.length ? Math.max(...preds.map((p) => level[p])) + 1 : 0;
+  }
+  const depth = Math.max(...order.map((id) => level[id])) + 1;
+  const cols = Array.from({ length: depth }, () => []);
+  for (const id of order) cols[level[id]].push(id);
+  const W = Math.max(width, 320, depth * 120 + (depth - 1) * gapX + 2 * pad);
+  const maxStack = Math.max(...cols.map((c) => c.length));
+  const H = Math.max(196, maxStack * (nodeH + gapY) - gapY + 48);
+  const nodeW = Math.min(176, (W - 2 * pad - (depth - 1) * gapX) / depth);
+  const maxChars = Math.max(8, Math.floor((nodeW - 18) / 6.4));
+  const stepX = depth > 1 ? (W - 2 * pad - nodeW) / (depth - 1) : 0;
+  const pos = {};
+  cols.forEach((ids, li) =>
+    ids.forEach((id, i) => {
+      pos[id] = { x: pad + li * stepX, y: (H - nodeH) / 2 + (i - (ids.length - 1) / 2) * (nodeH + gapY) };
+    })
+  );
+  const edges = [];
+  for (const t of tasks) {
+    for (const p of t.preds) edges.push({ key: p + "-" + t.id, from: p, to: t.id, w: Math.min(crit[p] ?? 0, crit[t.id] ?? 0) });
+  }
+  edges.sort((a, b) => a.w - b.w);
+  const scrolls = W > width;
+
+  return (
+    <div className="net-scroll">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: scrolls ? W + "px" : "100%", height: "auto", display: "block" }}
+        role="img"
+        aria-label="Activity network with the critical path highlighted"
+      >
+        {edges.map((e) => {
+          const a = pos[e.from];
+          const b = pos[e.to];
+          const sx = a.x + nodeW;
+          const sy = a.y + nodeH / 2;
+          const tx = b.x;
+          const ty = b.y + nodeH / 2;
+          const mx = (sx + tx) / 2;
+          const hot = e.w >= 0.5;
+          return (
+            <path
+              key={e.key}
+              d={`M${sx},${sy} H${mx} V${ty} H${tx}`}
+              fill="none"
+              strokeLinejoin="round"
+              strokeDasharray={hot ? undefined : "4 3"}
+              style={{ stroke: hot ? "var(--accent)" : "var(--chart-axis)", strokeWidth: hot ? 1.5 + 2.5 * e.w : 1.25 }}
+            />
+          );
+        })}
+        {order.map((id) => {
+          const t = byId[id];
+          const p = pos[id];
+          const c = crit[id] ?? 0;
+          const hot = c >= 0.5;
+          const lines = AppWrapLabel(t.short, maxChars);
+          return (
+            <g key={id}>
+              <rect
+                x={p.x}
+                y={p.y}
+                width={nodeW}
+                height={nodeH}
+                rx={3}
+                style={{ fill: "var(--surface)", stroke: hot ? "var(--accent)" : "var(--line-strong)", strokeWidth: hot ? 2 : 1 }}
+              />
+              <text x={p.x + 10} y={p.y + 16} fontSize={10.5} style={{ ...AppMono, fill: "var(--ink-muted)" }}>{id}</text>
+              <text x={p.x + nodeW - 10} y={p.y + 16} fontSize={10.5} textAnchor="end" style={{ ...AppMono, fill: hot ? "var(--accent-ink)" : "var(--ink-muted)" }}>
+                {scnFmtPct(c)}
+              </text>
+              {lines.map((ln, i) => (
+                <text key={i} x={p.x + 10} y={p.y + (lines.length === 1 ? 41 : 34 + i * 15)} fontSize={12.5} style={{ ...AppDisplay, fill: "var(--ink-1)" }}>
+                  {ln}
+                </text>
+              ))}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function App() {
+  const [scenario, setScenario] = React.useState(scnDefaultScenario);
+  const [settings, setSettings] = React.useState(AppSettingsBaseline);
+  const [tornadoMode, setTornadoMode] = React.useState("swing");
+  const [resetCount, setResetCount] = React.useState(0);
+  const dScenario = React.useDeferredValue(scenario);
+  const dSettings = React.useDeferredValue(settings);
+  const stale = dScenario !== scenario || dSettings !== settings;
+  const model = React.useMemo(() => ({ ...dScenario, ...dSettings }), [dScenario, dSettings]);
+  const r = React.useMemo(() => engSimulate(model), [model]);
+  const point = React.useMemo(() => engEvaluateBase(model, AppLikelyOverrides(model)), [model]);
+  const crit = React.useMemo(() => Object.fromEntries(r.criticality.map((c) => [c.id, c.index])), [r]);
+  const achieved = React.useMemo(
+    () => Object.fromEntries((r.appliedCorrelations || []).map((c) => [c.id, c.achieved])),
+    [r]
+  );
+  const inputOptions = React.useMemo(() => scnInputOptions(scenario), [scenario]);
+  const taskRefs = React.useMemo(() => scenario.tasks.map((t) => ({ id: t.id, short: t.short })), [scenario.tasks]);
+  const allowedPreds = React.useMemo(() => {
+    const out = {};
+    for (const t of scenario.tasks) {
+      const desc = scnDescendants(scenario.tasks, t.id);
+      out[t.id] = scenario.tasks.filter((x) => x.id !== t.id && !desc.has(x.id)).map((x) => x.id);
+    }
+    return out;
+  }, [scenario.tasks]);
+
+  const start = scenario.startDate;
+  const fmtDateTick = (d) => scnFmtDateTick(start, d);
+  const costMarkers = AppMarkers(r.costStats);
+  const durMarkers = AppMarkers(r.durationStats);
+  const pairCount = scenario.correlations.length;
+
+  const updateTask = (id, patch) =>
+    setScenario((s) => ({ ...s, tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  const updateCost = (id, patch) =>
+    setScenario((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+  const addTask = () => setScenario((s) => ({ ...s, tasks: [...s.tasks, scnNewTask(s)] }));
+  const removeTask = (id) =>
+    setScenario((s) => ({
+      ...s,
+      tasks: s.tasks.filter((t) => t.id !== id).map((t) => ({ ...t, preds: t.preds.filter((p) => p !== id) })),
+      correlations: s.correlations.filter((c) => c.a !== "dur:" + id && c.b !== "dur:" + id),
+    }));
+  const addCost = () => setScenario((s) => ({ ...s, costs: [...s.costs, scnNewCost(s)] }));
+  const removeCost = (id) =>
+    setScenario((s) => ({
+      ...s,
+      costs: s.costs.filter((c) => c.id !== id),
+      correlations: s.correlations.filter((c) => ![c.a, c.b].some((k) => k === "fix:" + id || k === "day:" + id)),
+    }));
+  const addCorrelation = () => setScenario((s) => ({ ...s, correlations: [...s.correlations, scnNewCorrelation(s)] }));
+  const updateCorrelation = (id, patch) =>
+    setScenario((s) => ({ ...s, correlations: s.correlations.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+  const removeCorrelation = (id) =>
+    setScenario((s) => ({ ...s, correlations: s.correlations.filter((c) => c.id !== id) }));
+  const updateProject = (patch) =>
+    setScenario((s) => ({ ...s, ...patch, subtitle: "name" in patch ? "" : s.subtitle }));
+  const reset = () => {
+    setScenario(scnDefaultScenario);
+    setSettings(AppSettingsBaseline);
+    setTornadoMode("swing");
+    setResetCount((n) => n + 1);
+  };
+  const resample = () => setSettings((s) => ({ ...s, seed: (s.seed * 48271) % 2147483647 }));
+
+  return (
+    <div className="app">
+      <header className="masthead">
+        <div>
+          <p className="eyebrow">Monte Carlo cost &amp; schedule risk</p>
+          <h1>{scenario.name || "Untitled project"}</h1>
+          {scenario.subtitle ? <p className="mast-sub">{scenario.subtitle}</p> : null}
+        </div>
+        <dl className="titleblock">
+          <div><dt>Start</dt><dd>{scnFmtDate(start, 0)}</dd></div>
+          <div><dt>Scope</dt><dd>{scenario.tasks.length} activities · {scenario.costs.length} costs</dd></div>
+          <div><dt>Distribution</dt><dd>{settings.distribution === "pert" ? "Beta-PERT" : "Triangular"}</dd></div>
+          <div><dt>Correlation</dt><dd>{settings.correlate && pairCount ? (pairCount === 1 ? "1 pair" : pairCount + " pairs") : "Off"}</dd></div>
+          <div><dt>Runs</dt><dd>{r.n.toLocaleString("en-US")}</dd></div>
+          <div><dt>Seed</dt><dd>{settings.seed}</dd></div>
+          <div><dt>Compute</dt><dd>{Math.round(r.elapsedMs)} ms</dd></div>
+          <div><dt>Status</dt><dd className={stale ? "is-stale" : ""}>{stale ? "Recalculating" : "Current"}</dd></div>
+          <div className="tb-sign">
+            <dt>Designed by</dt>
+            <dd className="tb-sign-name">{AppAuthor.name}</dd>
+            <dd className="tb-sign-link">
+              <a href={AppAuthor.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+            </dd>
+          </div>
+        </dl>
+      </header>
+
+      <div className="layout">
+        <aside className="rail" aria-label="Estimates">
+          <section className="rail-sec">
+            <h2 className="rail-h">Project</h2>
+            <PanelProject name={scenario.name} startDate={scenario.startDate} onChange={updateProject} />
+          </section>
+          <section className="rail-sec">
+            <h2 className="rail-h">Simulation</h2>
+            <PanelControls
+              settings={settings}
+              onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+              onReset={reset}
+              onResample={resample}
+              elapsedMs={r.elapsedMs}
+            />
+          </section>
+          <section className="rail-sec">
+            <h2 className="rail-h">Activities <span className="rail-unit">calendar days</span></h2>
+            {scenario.tasks.map((t) => (
+              <PanelTaskRow
+                key={t.id + ":" + resetCount}
+                task={t}
+                allTasks={taskRefs}
+                allowedPreds={allowedPreds[t.id]}
+                criticality={crit[t.id]}
+                canRemove={scenario.tasks.length > 1}
+                onChange={(patch) => updateTask(t.id, patch)}
+                onRemove={() => removeTask(t.id)}
+                rangeFor={AppRangeDays}
+                unit={AppUnitDays}
+                formatDays={scnFmtDays}
+                formatPct={scnFmtPct}
+              />
+            ))}
+            <button type="button" className="btn btn-add" onClick={addTask}>+ Add activity</button>
+          </section>
+          <section className="rail-sec">
+            <h2 className="rail-h">Cost lines <span className="rail-unit">US$</span></h2>
+            {scenario.costs.map((c) => (
+              <PanelCostRow
+                key={c.id + ":" + resetCount}
+                cost={c}
+                canRemove={scenario.costs.length > 1}
+                onChange={(patch) => updateCost(c.id, patch)}
+                onRemove={() => removeCost(c.id)}
+                rangeFixed={AppRangeMoney}
+                rangePerDay={AppRangeRate}
+                unitMoney={AppUnitMoney}
+                unitRate={AppUnitRate}
+                formatMoney={scnFmtMoney}
+                formatRate={scnFmtRate}
+              />
+            ))}
+            <button type="button" className="btn btn-add" onClick={addCost}>+ Add cost line</button>
+          </section>
+          <section className="rail-sec">
+            <h2 className="rail-h">Correlations <span className="rail-unit">rank ρ</span></h2>
+            <PanelCorrelations
+              correlations={scenario.correlations}
+              options={inputOptions}
+              achieved={achieved}
+              enabled={settings.correlate}
+              onToggle={(v) => setSettings((s) => ({ ...s, correlate: v }))}
+              onChange={updateCorrelation}
+              onRemove={removeCorrelation}
+              onAdd={addCorrelation}
+              formatRho={scnFmtRho}
+            />
+          </section>
+        </aside>
+
+        <main className={"canvas" + (stale ? " is-stale" : "")}>
+          <AppVerdict r={r} point={point} start={start} />
+
+          <section className="block">
+            <header className="block-head">
+              <h2>Total cost</h2>
+              <p>Includes per-day costs, so a late project is also an expensive one.</p>
+            </header>
+            <div className="pair">
+              <AppFigure num={1} title="Distribution of total cost">
+                <AppMeasure>{(w) => <ChartDistribution width={w} hist={r.costHist} markers={costMarkers} formatX={scnFmtMoneyTick} xTitle="TOTAL COST (US$)" height={230} />}</AppMeasure>
+              </AppFigure>
+              <AppFigure num={2} title="Chance of finishing at or under a budget">
+                <AppMeasure>{(w) => <ChartSCurve width={w} points={r.costCdf} markers={costMarkers} formatX={scnFmtMoneyTick} xTitle="TOTAL COST (US$)" height={230} />}</AppMeasure>
+              </AppFigure>
+            </div>
+          </section>
+
+          <section className="block">
+            <header className="block-head">
+              <h2>Completion</h2>
+              <p>For the default scenario, completion is the day the new transformer is energised and handed over.</p>
+            </header>
+            <div className="pair">
+              <AppFigure num={3} title="Distribution of completion date">
+                <AppMeasure>{(w) => <ChartDistribution width={w} hist={r.durationHist} markers={durMarkers} formatX={fmtDateTick} xTitle="COMPLETION DATE" height={230} />}</AppMeasure>
+              </AppFigure>
+              <AppFigure num={4} title="Chance of completing by a date">
+                <AppMeasure>{(w) => <ChartSCurve width={w} points={r.durationCdf} markers={durMarkers} formatX={fmtDateTick} xTitle="COMPLETION DATE" height={230} />}</AppMeasure>
+              </AppFigure>
+            </div>
+          </section>
+
+          <section className="block">
+            <header className="block-head">
+              <h2>Risk drivers</h2>
+              <div className="seg" role="group" aria-label="Sensitivity method">
+                <button type="button" className={"seg-btn" + (tornadoMode === "swing" ? " is-on" : "")} aria-pressed={tornadoMode === "swing"} onClick={() => setTornadoMode("swing")}>
+                  Swing P10–P90
+                </button>
+                <button type="button" className={"seg-btn" + (tornadoMode === "corr" ? " is-on" : "")} aria-pressed={tornadoMode === "corr"} onClick={() => setTornadoMode("corr")}>
+                  Rank correlation
+                </button>
+              </div>
+            </header>
+            {tornadoMode === "swing" ? (
+              <div className="legend">
+                <span><i className="swatch swatch-low"></i>Input at its own P10</span>
+                <span><i className="swatch swatch-high"></i>Input at its own P90</span>
+                <span className="muted">one input at a time, every other input at its mean</span>
+              </div>
+            ) : (
+              <div className="legend">
+                <span><i className="swatch swatch-high"></i>Higher input, higher result</span>
+                <span><i className="swatch swatch-low"></i>Higher input, lower result</span>
+                <span className="muted">all inputs varying at once, correlations included</span>
+              </div>
+            )}
+            <div className="pair">
+              <AppFigure num={5} title="What moves total cost" note="Activity durations appear here because site overhead and price escalation are charged per day.">
+                <AppMeasure>{(w) => <ChartTornado width={w} rows={r.tornadoCost} base={r.base.cost} mode={tornadoMode} formatX={scnFmtMoney} xTitle="TOTAL COST (US$)" maxRows={8} />}</AppMeasure>
+              </AppFigure>
+              <AppFigure num={6} title="What moves completion" note="An activity with plenty of float barely moves the finish, however uncertain it is.">
+                <AppMeasure>{(w) => <ChartTornado width={w} rows={r.tornadoDuration} base={r.base.duration} mode={tornadoMode} formatX={scnFmtDays} xTitle="PROJECT DURATION (DAYS)" maxRows={Math.min(8, scenario.tasks.length)} />}</AppMeasure>
+              </AppFigure>
+            </div>
+          </section>
+
+          <section className="block">
+            <header className="block-head">
+              <h2>Critical path</h2>
+              <p>Copper marks the path that governs completion in most runs.</p>
+            </header>
+            <div className="pair pair-wide">
+              <AppFigure num={7} title="Activity network" note="Each figure is the share of runs in which that activity is critical. Solid copper links sit on the critical path in at least half of all runs; dashed links carry float.">
+                <AppMeasure>{(w) => <AppNetwork width={w} tasks={scenario.tasks} crit={crit} />}</AppMeasure>
+              </AppFigure>
+              <AppFigure num={8} title="Criticality index" note="Share of runs in which each activity had zero float.">
+                <AppMeasure>{(w) => <ChartCriticality width={w} items={r.criticality} formatPct={scnFmtPct} />}</AppMeasure>
+              </AppFigure>
+            </div>
+          </section>
+
+          <section className="block">
+            <header className="block-head">
+              <h2>How the numbers are made</h2>
+            </header>
+            <dl className="method">
+              <div>
+                <dt>Estimates</dt>
+                <dd>Every activity and cost is a three-point range. Beta-PERT weights the most-likely value four times as heavily as the extremes; Triangular gives the tails more weight and is the more cautious choice.</dd>
+              </div>
+              <div>
+                <dt>Schedule</dt>
+                <dd>Each run samples every duration and re-solves the network: an activity starts when its last predecessor finishes. The critical path can change from run to run, which Fig. 8 counts.</dd>
+              </div>
+              <div>
+                <dt>Cost</dt>
+                <dd>Total cost is the fixed costs plus each per-day rate multiplied by that run's project duration. This is how schedule risk becomes cost risk.</dd>
+              </div>
+              <div>
+                <dt>Correlation</dt>
+                <dd>Linked inputs are paired with the Iman–Conover method: sampled values are reordered so each pair's rank correlation matches its target, while every input keeps its own distribution. The achieved value is shown beside each pair.</dd>
+              </div>
+              <div>
+                <dt>Drivers</dt>
+                <dd>Swing moves one input from its own P10 to its P90 with everything else at its mean, so it ignores correlation. Rank correlation shows how closely each input tracks the result with everything varying together, correlations included. Both use the first 10,000 runs.</dd>
+              </div>
+              <div>
+                <dt>Confidence levels</dt>
+                <dd>P80 means 80% of runs finished at or under that value. The cost and date P80s are separate statements; the joint figure above is the chance of meeting both.</dd>
+              </div>
+              <div>
+                <dt>Limits</dt>
+                <dd>Discrete risk events, such as a failed factory acceptance test on the transformer, are not modelled. Durations are calendar days with no working calendar.</dd>
+              </div>
+            </dl>
+            <p className="foot">
+              <span>
+                Designed and built by{" "}
+                <a href={AppAuthor.linkedin} target="_blank" rel="noopener noreferrer">{AppAuthor.name}</a>
+              </span>
+              <span>Everything runs in your browser. Changes to the estimates stay on this page and are not saved.</span>
+            </p>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+</script>

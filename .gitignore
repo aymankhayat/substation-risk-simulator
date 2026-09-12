@@ -1,0 +1,11 @@
+node_modules/
+.env*
+dist/
+build/
+.next/
+.vercel/
+.netlify/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini
