@@ -39,7 +39,7 @@ The default scenario is a 40 MVA 132/33 kV transformer addition at an existing s
 ## Tech stack
 
 - React 18 (UMD build) with JSX compiled in the browser by Babel Standalone — no build step, no npm
-- Hand-written SVG charts, no chart library
+- Hand-written SVG charts and line illustrations, with no chart library or image files
 - Plain JavaScript simulation engine, verified against analytic test vectors
 - IBM Plex type family
 - Built with AI-assisted development using Claude Code; [`CONTRACTS.md`](CONTRACTS.md) is the module specification the code was written against
@@ -68,6 +68,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/assemble.ps1
 | `src/scenario.js` | Default scenario, helpers and number formatting |
 | `src/charts.jsx` | SVG charts |
 | `src/panel.jsx` | Input controls |
+| `src/hero.jsx` | Landing hero and live product showcase |
+| `src/art.jsx` | Custom SVG illustrations of substation equipment |
 | `src/app.jsx` | Page composition and state |
 | `src/shell.html` | Styles, theme tokens and page template |
 
