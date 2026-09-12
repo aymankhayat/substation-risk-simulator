@@ -112,11 +112,11 @@ function ChartTooltip({ x, y, lines, plotLeft, plotRight }) {
   if (boxY < 0) boxY = y + 10;
   return (
     <g pointerEvents="none">
-      <rect x={boxX} y={boxY} width={boxW} height={boxH} rx={4}
-        style={{ fill: 'var(--chart-surface)', stroke: 'var(--chart-axis)' }} strokeWidth={1} />
+      <rect x={boxX} y={boxY} width={boxW} height={boxH} rx={6}
+        style={{ fill: 'var(--tip-bg)', stroke: 'var(--tip-bg)' }} strokeWidth={1} />
       {safeLines.map((l, i) => (
         <text key={i} x={boxX + 8} y={boxY + 16 + i * 15} fontSize={11}
-          style={{ fill: 'var(--ink-1)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+          style={{ fill: i === 0 ? 'var(--tip-ink)' : 'var(--tip-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontWeight: i === 0 ? 600 : 400 }}>
           {l}
         </text>
       ))}

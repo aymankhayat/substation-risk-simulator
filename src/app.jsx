@@ -1,5 +1,6 @@
 const AppSettingsBaseline = { iterations: 10000, seed: 20261001, distribution: "pert", bins: 40, correlate: true };
 const AppAuthor = { name: "Ayman Khayat", linkedin: "https://www.linkedin.com/in/ayman-khayat-350b4b335" };
+const AppRepo = "https://github.com/aymankhayat/substation-risk-simulator";
 const AppMono = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
 const AppDisplay = { fontFamily: "var(--font-display)", fontWeight: 600 };
 
@@ -206,7 +207,7 @@ function AppNetwork({ tasks, crit, width }) {
               fill="none"
               strokeLinejoin="round"
               strokeDasharray={hot ? undefined : "4 3"}
-              style={{ stroke: hot ? "var(--accent)" : "var(--chart-axis)", strokeWidth: hot ? 1.5 + 2.5 * e.w : 1.25 }}
+              style={{ stroke: hot ? "var(--crit)" : "var(--chart-axis)", strokeWidth: hot ? 1.5 + 2.5 * e.w : 1.25 }}
             />
           );
         })}
@@ -224,10 +225,10 @@ function AppNetwork({ tasks, crit, width }) {
                 width={nodeW}
                 height={nodeH}
                 rx={3}
-                style={{ fill: "var(--surface)", stroke: hot ? "var(--accent)" : "var(--line-strong)", strokeWidth: hot ? 2 : 1 }}
+                style={{ fill: "var(--surface)", stroke: hot ? "var(--crit)" : "var(--line-strong)", strokeWidth: hot ? 2 : 1 }}
               />
               <text x={p.x + 10} y={p.y + 16} fontSize={10.5} style={{ ...AppMono, fill: "var(--ink-muted)" }}>{id}</text>
-              <text x={p.x + nodeW - 10} y={p.y + 16} fontSize={10.5} textAnchor="end" style={{ ...AppMono, fill: hot ? "var(--accent-ink)" : "var(--ink-muted)" }}>
+              <text x={p.x + nodeW - 10} y={p.y + 16} fontSize={10.5} textAnchor="end" style={{ ...AppMono, fill: hot ? "var(--crit-ink)" : "var(--ink-muted)" }}>
                 {scnFmtPct(c)}
               </text>
               {lines.map((ln, i) => (
@@ -255,6 +256,7 @@ function App() {
   const r = React.useMemo(() => engSimulate(model), [model]);
   const point = React.useMemo(() => engEvaluateBase(model, AppLikelyOverrides(model)), [model]);
   const crit = React.useMemo(() => Object.fromEntries(r.criticality.map((c) => [c.id, c.index])), [r]);
+  const joint = React.useMemo(() => AppJointP80(r), [r]);
   const achieved = React.useMemo(
     () => Object.fromEntries((r.appliedCorrelations || []).map((c) => [c.id, c.achieved])),
     [r]
@@ -310,11 +312,21 @@ function App() {
   const resample = () => setSettings((s) => ({ ...s, seed: (s.seed * 48271) % 2147483647 }));
 
   return (
+    <div className="site">
+      <HeroNav githubUrl={AppRepo} author={AppAuthor.name} />
+      <HeroSection r={r} point={point} joint={joint} scenario={scenario} settings={settings} githubUrl={AppRepo} />
+      <HeroFeatures />
+      <section className="model" id="model" aria-labelledby="model-title">
+        <div className="model-intro">
+          <p className="eyebrow">Live model</p>
+          <h2 className="model-title" id="model-title">Every number below is live</h2>
+          <p className="model-sub">Drag any estimate, switch the distribution or link inputs, and the simulation reruns as you go.</p>
+        </div>
     <div className="app">
       <header className="masthead">
         <div>
           <p className="eyebrow">Monte Carlo cost &amp; schedule risk</p>
-          <h1>{scenario.name || "Untitled project"}</h1>
+          <h2 className="mast-title">{scenario.name || "Untitled project"}</h2>
           {scenario.subtitle ? <p className="mast-sub">{scenario.subtitle}</p> : null}
         </div>
         <dl className="titleblock">
@@ -492,7 +504,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>How the numbers are made</h2>
+              <h2 id="method">How the numbers are made</h2>
             </header>
             <dl className="method">
               <div>
@@ -534,6 +546,8 @@ function App() {
           </section>
         </main>
       </div>
+    </div>
+      </section>
     </div>
   );
 }

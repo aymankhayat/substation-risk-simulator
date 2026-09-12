@@ -155,9 +155,6 @@ function PanelTaskRow({ task, allTasks, allowedPreds, criticality, canRemove, on
           onChange={(e) => onChange({ short: e.target.value, name: e.target.value })}
         />
         <span className="prow-id">{task.id}</span>
-        {criticality !== undefined && (
-          <span className={chipClass}>{formatPct(criticality)} critical</span>
-        )}
         {canRemove && (
           <button
             type="button"
@@ -202,6 +199,9 @@ function PanelTaskRow({ task, allTasks, allowedPreds, criticality, canRemove, on
             );
           })}
         {task.preds.length === 0 && <span>starts immediately</span>}
+        {criticality !== undefined && (
+          <span className={chipClass}>{formatPct(criticality)} critical</span>
+        )}
       </div>
     </div>
   );
