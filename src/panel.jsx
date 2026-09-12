@@ -431,7 +431,7 @@ function PanelControls({ settings, onChange, onReset, onResample, elapsedMs }) {
         </button>
       </div>
       <div className="muted">
-        {runsLabel + " · " + Math.round(elapsedMs) + " ms"}
+        {elapsedMs >= 1 ? runsLabel + " · " + Math.round(elapsedMs) + " ms" : runsLabel}
       </div>
     </div>
   );

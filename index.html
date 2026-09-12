@@ -646,7 +646,7 @@ input[type=range].panel-range {
 .block-head h2 { margin: 0; font: 800 21px/1.2 var(--font-display); letter-spacing: -0.02em; }
 .block-head p { max-width: 62ch; margin: 0; font-size: 13.5px; color: var(--ink-muted); }
 .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.pair-wide { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+.pair-wide { grid-template-columns: minmax(0, 1fr); }
 .fig {
   display: grid;
   gap: 10px;
@@ -2867,7 +2867,7 @@ function PanelControls({ settings, onChange, onReset, onResample, elapsedMs }) {
         </button>
       </div>
       <div className="muted">
-        {runsLabel + " · " + Math.round(elapsedMs) + " ms"}
+        {elapsedMs >= 1 ? runsLabel + " · " + Math.round(elapsedMs) + " ms" : runsLabel}
       </div>
     </div>
   );
@@ -4055,7 +4055,7 @@ function AppVerdict({ r, point, start }) {
 function AppNetwork({ tasks, crit, width }) {
   const nodeH = 60;
   const pad = 12;
-  const gapX = 26;
+  const gapX = 22;
   const gapY = 20;
   const order = engTopoOrder(tasks);
   const byId = Object.fromEntries(tasks.map((t) => [t.id, t]));
@@ -4067,7 +4067,7 @@ function AppNetwork({ tasks, crit, width }) {
   const depth = Math.max(...order.map((id) => level[id])) + 1;
   const cols = Array.from({ length: depth }, () => []);
   for (const id of order) cols[level[id]].push(id);
-  const W = Math.max(width, 320, depth * 120 + (depth - 1) * gapX + 2 * pad);
+  const W = Math.max(width, 320, depth * 104 + (depth - 1) * gapX + 2 * pad);
   const maxStack = Math.max(...cols.map((c) => c.length));
   const H = Math.max(196, maxStack * (nodeH + gapY) - gapY + 48);
   const nodeW = Math.min(176, (W - 2 * pad - (depth - 1) * gapX) / depth);
@@ -4239,7 +4239,7 @@ function App() {
           <div><dt>Correlation</dt><dd>{settings.correlate && pairCount ? (pairCount === 1 ? "1 pair" : pairCount + " pairs") : "Off"}</dd></div>
           <div><dt>Runs</dt><dd>{r.n.toLocaleString("en-US")}</dd></div>
           <div><dt>Seed</dt><dd>{settings.seed}</dd></div>
-          <div><dt>Compute</dt><dd>{Math.round(r.elapsedMs)} ms</dd></div>
+          <div><dt>Compute</dt><dd>{r.elapsedMs >= 1 ? Math.round(r.elapsedMs) + " ms" : "—"}</dd></div>
           <div><dt>Status</dt><dd className={stale ? "is-stale" : ""}>{stale ? "Recalculating" : "Current"}</dd></div>
           <div className="tb-sign">
             <dt>Designed by</dt>
