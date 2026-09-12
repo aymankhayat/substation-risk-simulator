@@ -6,6 +6,7 @@ build/
 .vercel/
 .netlify/
 .claude/
+linkedin/
 .DS_Store
 Thumbs.db
 desktop.ini
