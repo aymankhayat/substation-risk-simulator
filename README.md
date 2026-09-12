@@ -4,7 +4,7 @@ Monte Carlo cost and schedule risk analysis for a capital engineering project, r
 
 Designed and built by **Ayman Khayat** · [LinkedIn](https://www.linkedin.com/in/ayman-khayat-350b4b335)
 
-**Live demo:** [Live Demo](DEMO_LINK_PLACEHOLDER)
+**Live demo:** [aymankhayat.github.io/substation-risk-simulator](https://aymankhayat.github.io/substation-risk-simulator/)
 
 ![Screenshot](docs/screenshot.png)
 
