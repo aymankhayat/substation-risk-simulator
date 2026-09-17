@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Substation Risk Simulator - OG Card</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 1200px;
+      height: 627px;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .card {
+      width: 1200px;
+      height: 627px;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 56px 64px;
+      background: #F5F5F2;
+      background-image:
+        radial-gradient(55% 70% at 18% 0%, rgba(30,158,82,0.16), transparent 70%),
+        radial-gradient(45% 60% at 100% 100%, rgba(59,125,221,0.14), transparent 70%);
+    }
+
+    .ring {
+      position: absolute;
+      border: 1.5px solid rgba(30,158,82,0.22);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .ring:nth-child(1) {
+      width: 520px;
+      height: 520px;
+      left: 1010px;
+      top: 150px;
+    }
+
+    .ring:nth-child(2) {
+      width: 760px;
+      height: 760px;
+      left: 1010px;
+      top: 150px;
+    }
+
+    .ring:nth-child(3) {
+      width: 1000px;
+      height: 1000px;
+      left: 1010px;
+      top: 150px;
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      mix-blend-mode: overlay;
+      opacity: 0.22;
+      background-size: 200px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logomark {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+
+    .brand-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      color: #111513;
+      line-height: 1;
+    }
+
+    .headline {
+      margin-top: 44px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      color: #111513;
+      max-width: 900px;
+    }
+
+    .grad {
+      background: linear-gradient(95deg, #1E9E52 0%, #18A7A0 45%, #3B7DDD 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 40px;
+    }
+
+    .stat-item {
+      background: white;
+      border: 1px solid #E6E6E0;
+      border-radius: 18px;
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .stat-value {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 34px;
+      color: #111513;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      color: #5A605C;
+      margin-top: 6px;
+    }
+
+    .footer-row {
+      position: absolute;
+      left: 64px;
+      right: 64px;
+      bottom: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .footer-left {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: #111513;
+    }
+
+    .footer-right {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 16px;
+      color: #6A706C;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="ring"></span>
+    <span class="ring"></span>
+    <span class="ring"></span>
+    <div class="grain"></div>
+
+    <div class="content">
+      <div class="brand-row">
+        <svg class="logomark" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="10" fill="#1E9E52"/>
+          <path d="M20 8 L11 32 M20 8 L29 32 M14.4 16 H25.6 M12.6 23 H27.4" stroke="white" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="brand-text">Substation Risk Simulator</div>
+      </div>
+
+      <div class="headline">Know the <span class="grad">real</span> finish date and budget before you commit.</div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-value">$21.54M</div>
+          <div class="stat-label">P80 budget</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">7 Feb 2029</div>
+          <div class="stat-label">P80 energisation</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">10,000</div>
+          <div class="stat-label">simulated futures</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-row">
+      <div class="footer-left">Designed & built by Ayman Khayat</div>
+      <div class="footer-right">aymankhayat.github.io/substation-risk-simulator</div>
+    </div>
+  </div>
+</body>
+</html>

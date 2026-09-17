@@ -7,15 +7,18 @@
 <meta property="og:title" content="Substation Risk Simulator">
 <meta property="og:description" content="Know the real finish date and budget before you commit. A live Monte Carlo cost and schedule risk model of a 132 kV substation upgrade, by Ayman Khayat.">
 <meta property="og:url" content="https://aymankhayat.github.io/substation-risk-simulator/">
-<meta property="og:image" content="https://aymankhayat.github.io/substation-risk-simulator/docs/social-card.png">
+<meta property="og:image" content="https://aymankhayat.github.io/substation-risk-simulator/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="627">
-<meta property="og:image:alt" content="Substation Risk Simulator: headline, controls and a live cost-risk chart">
+<meta property="og:image:alt" content="Substation Risk Simulator: P80 budget $21.54M, P80 energisation 7 Feb 2029, 10,000 simulated futures. Designed and built by Ayman Khayat.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://aymankhayat.github.io/substation-risk-simulator/docs/social-card.png">
+<meta name="twitter:title" content="Substation Risk Simulator">
+<meta name="twitter:description" content="Know the real finish date and budget before you commit. A live Monte Carlo cost and schedule risk model of a 132 kV substation upgrade, by Ayman Khayat.">
+<meta name="twitter:image" content="https://aymankhayat.github.io/substation-risk-simulator/assets/og-card.png">
+<link rel="canonical" href="https://aymankhayat.github.io/substation-risk-simulator/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
 :root {
   color-scheme: light;
@@ -718,6 +721,452 @@ input[type=range].panel-range {
   .hero-badge-dot { animation: none; }
   .canvas, .pill-tab, .btn-primary, .btn-ghost { transition: none; }
 }
+</style>
+<style>
+:root {
+  --paper: #F5F5F2;
+  --graphite: #111513;
+  --energised: #1E9E52;
+  --energised-bright: #2BC46A;
+  --busbar: #E0892B;
+  --signal: #3B7DDD;
+  --iri-pink: #F2A7C3;
+  --iri-orange: #F6B37A;
+  --iri-blue: #9CC3F5;
+  --iri-violet: #B9A6F2;
+  --font-hero: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-ticker: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --dots-dark: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.4px);
+  --ink-caption: #5F6561;
+}
+.media-caption,
+.note-metric-label,
+.note-commit,
+.site-foot,
+.foot-row { color: var(--ink-caption); }
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-image: var(--grain);
+  background-size: 220px;
+  mix-blend-mode: overlay;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* ---------- hero panel ---------- */
+.hero { max-width: 1352px; padding: 16px 16px 0; }
+.hero::before { content: none; }
+.hero-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 0 32px;
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  background:
+    radial-gradient(60% 45% at 50% 18%, rgba(30, 158, 82, 0.10), transparent 70%),
+    radial-gradient(35% 30% at 88% 8%, rgba(59, 125, 221, 0.08), transparent 70%),
+    linear-gradient(180deg, #FCFCFA 0%, #F1F3EF 100%);
+  box-shadow: 0 1px 2px rgba(18, 20, 19, 0.04), 0 40px 90px -50px rgba(18, 20, 19, 0.35);
+}
+.hero-panel > :not(.grain):not(.hero-rings):not(.hero-light) { position: relative; z-index: 2; }
+.hero-panel .nav {
+  position: relative;
+  top: auto;
+  padding: 18px 4px 6px;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.hero-panel .hero-badge { margin-top: 36px; }
+
+.hero-light {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(560px circle at var(--mx, 50%) var(--my, 22%), rgba(30, 158, 82, 0.14), rgba(59, 125, 221, 0.06) 42%, transparent 70%);
+}
+
+.hero-rings { position: absolute; left: 50%; top: 330px; z-index: 0; width: 0; height: 0; pointer-events: none; }
+.ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 7px rgba(30, 158, 82, 0.35));
+}
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(30, 158, 82, 0) 0deg,
+    rgba(30, 158, 82, 0.55) 60deg,
+    rgba(59, 125, 221, 0.5) 150deg,
+    rgba(30, 158, 82, 0) 230deg,
+    rgba(43, 196, 106, 0.35) 310deg,
+    rgba(30, 158, 82, 0) 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  animation: ring-spin 80s linear infinite;
+}
+.ring-1 { width: 1500px; height: 1500px; opacity: 0.55; }
+.ring-2 { width: 1080px; height: 1080px; opacity: 0.8; }
+.ring-2::before { animation-duration: 60s; animation-direction: reverse; }
+.ring-3 { width: 700px; height: 700px; opacity: 0.7; }
+.ring-3::before { animation-duration: 44s; }
+.is-offscreen .ring::before,
+.is-offscreen .btn-glow { animation-play-state: paused; }
+@keyframes ring-spin { to { transform: rotate(360deg); } }
+
+.hero-title {
+  font: 800 clamp(30px, 6.9vw, 84px)/0.98 var(--font-hero);
+  letter-spacing: -0.04em;
+}
+.grad {
+  background: linear-gradient(95deg, #1E9E52 0%, #18A7A0 45%, #3B7DDD 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero-sub { font-size: clamp(15px, 1.45vw, 18px); color: #6A706C; }
+
+@property --glow-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.btn-glow {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: conic-gradient(from var(--glow-angle), #1E9E52, #3B7DDD, #2BC46A, #9CC3F5, #1E9E52);
+  box-shadow: 0 12px 32px -10px rgba(30, 158, 82, 0.6);
+  text-decoration: none;
+  animation: glow-spin 4s linear infinite;
+  transition: transform 0.2s ease;
+}
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(14px);
+  opacity: 0.45;
+}
+.btn-glow-inner {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--graphite);
+  color: #FFFFFF;
+  font: 600 14px/1 var(--font-body);
+}
+.btn-glow:hover { transform: translateY(-1px); }
+.btn-glow:hover .btn-glow-inner { background: #1D2320; }
+@keyframes glow-spin { to { --glow-angle: 360deg; } }
+
+/* ---------- ticker ---------- */
+.ticker {
+  position: relative;
+  max-width: 1320px;
+  margin: 18px auto 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.ticker-track { display: flex; width: max-content; padding: 14px 0; animation: ticker-run 60s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-copy { display: flex; }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  padding-right: 28px;
+  font: 500 13px/1 var(--font-ticker);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.ticker-item::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--energised); opacity: 0.55; }
+@keyframes ticker-run { to { transform: translateX(-50%); } }
+
+/* ---------- split sections ---------- */
+.split { max-width: 1352px; margin: 88px auto 0; padding: 0 16px; }
+.split-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 56px;
+  align-items: center;
+}
+.split-flip .split-media { order: 2; }
+.split-dark .split-inner {
+  overflow: hidden;
+  padding: 56px;
+  border-radius: 34px;
+  background: var(--graphite);
+  color: #E9EDE9;
+}
+.split-dark .split-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--dots-dark);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(80% 90% at 70% 40%, #000, transparent 85%);
+  mask-image: radial-gradient(80% 90% at 70% 40%, #000, transparent 85%);
+  pointer-events: none;
+}
+.split-dark .split-inner > * { position: relative; }
+.split-media { margin: 0; min-width: 0; }
+.media-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-2);
+}
+.split-dark .media-frame { border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6); }
+.media-frame img { display: block; width: 100%; height: auto; transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.media-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 1s ease;
+  pointer-events: none;
+}
+.media-frame:hover img { transform: scale(1.035); }
+.media-frame:hover::after { transform: translateX(120%); }
+.media-caption { margin-top: 12px; font: 500 12px/1.4 var(--font-ticker); color: var(--ink-muted); }
+.split-dark .media-caption { color: #97A19A; }
+.split-dark .eyebrow { color: #6FD69A; }
+.split-heading {
+  margin: 12px 0 0;
+  font: 800 clamp(28px, 3.3vw, 46px)/1.02 var(--font-hero);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.split-dark .split-heading { color: #F4F6F3; }
+.split-text p { max-width: 52ch; margin: 18px 0 0; font-size: 16px; line-height: 1.65; color: var(--ink-2); }
+.split-dark .split-text p { color: #B7C0BA; }
+
+.pill-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+  padding: 11px 16px 11px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--ink-1);
+  font: 600 14px/1 var(--font-body);
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.pill-link:hover { border-color: var(--ink-1); }
+.pill-link-arrow { display: inline-block; transition: transform 0.2s ease; }
+.pill-link:hover .pill-link-arrow { transform: translateX(3px); }
+.split-dark .pill-link { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.24); color: #FFFFFF; }
+.split-dark .pill-link:hover { border-color: #FFFFFF; background: rgba(255, 255, 255, 0.12); }
+
+/* ---------- oversized headline + KPI band ---------- */
+.band { position: relative; max-width: 1352px; margin: 104px auto 0; padding: 0 16px; }
+.band-bigtext {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 -0.34em;
+  font: 800 clamp(40px, 10.6vw, 184px)/0.82 var(--font-hero);
+  letter-spacing: -0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #CFD3CD;
+  pointer-events: none;
+  user-select: none;
+}
+.band-panel {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding: clamp(72px, 9vw, 120px) clamp(20px, 3.5vw, 44px) clamp(28px, 3.5vw, 44px);
+  border-radius: 34px;
+  background: var(--graphite);
+}
+.band-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--dots-dark);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.kpis { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.kpi {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+.kpi-value { font: 800 clamp(24px, 2.8vw, 40px)/1 var(--font-hero); letter-spacing: -0.02em; color: #FFFFFF; }
+.kpi-label { font: 500 13.5px/1.35 var(--font-body); color: #A9B3AC; }
+
+/* ---------- live model framing ---------- */
+.model { margin-top: 104px; }
+.model-title { font-family: var(--font-hero); font-weight: 800; letter-spacing: -0.035em; }
+.rail { top: 16px; max-height: calc(100vh - 16px); }
+
+/* ---------- engineering notes ---------- */
+.notes { max-width: 1352px; margin: 104px auto 0; padding: 0 16px; }
+.notes-head { max-width: 760px; margin-bottom: 36px; }
+.notes-title { margin: 10px 0 0; font: 800 clamp(30px, 3.6vw, 48px)/1.04 var(--font-hero); letter-spacing: -0.025em; text-wrap: balance; }
+.notes-sub { max-width: 60ch; margin: 14px 0 0; font-size: 16px; color: var(--ink-2); }
+.notes-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.note {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 26px 26px 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-1);
+}
+.note-metric { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-strong); }
+.note-metric-value { font: 800 34px/1 var(--font-hero); letter-spacing: -0.02em; color: var(--accent-ink); }
+.note-metric-label { font: 500 12.5px/1.4 var(--font-ticker); color: var(--ink-muted); }
+.note-title { margin: 6px 0 0; font: 700 20px/1.25 var(--font-hero); letter-spacing: -0.01em; }
+.note-body { margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+.note-body strong { font-weight: 700; color: var(--ink-1); }
+.note-commit { margin: 4px 0 0; font: 500 12px var(--font-ticker); color: var(--ink-muted); }
+.note-commit code { padding: 2px 6px; border-radius: 6px; background: var(--ground-2); font: inherit; color: var(--ink-1); }
+
+/* ---------- iridescent CTA ---------- */
+.cta-wrap { max-width: 1352px; margin: 104px auto 0; padding: 0 16px; }
+.cta-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(44px, 7vw, 100px) clamp(24px, 6vw, 80px);
+  border-radius: 36px;
+  text-align: center;
+  background:
+    radial-gradient(40% 60% at 14% 22%, var(--iri-pink), transparent 70%),
+    radial-gradient(45% 60% at 86% 24%, var(--iri-blue), transparent 70%),
+    radial-gradient(50% 60% at 30% 92%, var(--iri-orange), transparent 70%),
+    radial-gradient(45% 55% at 80% 86%, var(--iri-violet), transparent 70%),
+    #EFEAF2;
+  background-size: 170% 170%;
+  animation: iri-drift 20s ease-in-out infinite alternate;
+}
+.cta-card .grain { opacity: 0.35; }
+.cta-card > :not(.grain) { position: relative; z-index: 1; }
+@keyframes iri-drift { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+.cta-title { margin: 0; font: 800 clamp(32px, 5vw, 66px)/1 var(--font-hero); letter-spacing: -0.035em; text-wrap: balance; color: var(--graphite); }
+.cta-text { max-width: 54ch; margin: 16px auto 0; font-size: 17px; line-height: 1.55; color: #2D3330; }
+.cta-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; }
+.btn-dark,
+.btn-ghost-dark {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 24px;
+  border-radius: 999px;
+  font: 600 14px/1 var(--font-body);
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.btn-dark { background: var(--graphite); color: #FFFFFF; box-shadow: 0 12px 28px -12px rgba(17, 21, 19, 0.6); }
+.btn-dark:hover { background: #262C29; transform: translateY(-1px); }
+.btn-ghost-dark { border: 1px solid rgba(17, 21, 19, 0.2); background: rgba(255, 255, 255, 0.55); color: var(--graphite); }
+.btn-ghost-dark:hover { background: rgba(255, 255, 255, 0.8); transform: translateY(-1px); }
+
+/* ---------- builder credit + footer ---------- */
+.credit { max-width: 1352px; margin: 88px auto 0; padding: 0 16px; }
+.credit-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  padding: 36px 40px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: #FFFFFF;
+}
+.credit-name { margin: 8px 0 0; font: 800 clamp(34px, 5vw, 62px)/1 var(--font-hero); letter-spacing: -0.035em; }
+.credit-role { max-width: 58ch; margin: 10px 0 0; font-size: 15px; color: var(--ink-2); }
+.credit-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.credit-links .pill-link { margin-top: 0; }
+.site-foot { max-width: 1352px; margin: 64px auto 0; padding: 0 16px 36px; color: var(--ink-muted); }
+.foot-art { margin-bottom: 16px; opacity: 0.55; }
+.foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font: 500 12.5px/1.4 var(--font-ticker);
+}
+.foot-row a { color: var(--ink-1); text-underline-offset: 3px; }
+
+/* ---------- reveal ---------- */
+.reveal { transform: translateY(18px); transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.reveal.is-in { transform: none; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .split-inner { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .split-flip .split-media { order: 0; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .notes-list { grid-template-columns: minmax(0, 1fr); }
+  .split-dark .split-inner { padding: 28px 20px; border-radius: 26px; }
+}
+@media (max-width: 760px) {
+  .hero { padding: 8px 8px 0; }
+  .hero-panel { padding: 0 14px; border-radius: 26px; }
+  .hero-panel .hero-badge { margin-top: 22px; }
+  .hero-title br { display: none; }
+  .hero-rings { top: 260px; }
+  .ring-1 { width: 760px; height: 760px; }
+  .ring-2 { width: 560px; height: 560px; }
+  .ring-3 { width: 380px; height: 380px; }
+  .split, .band, .notes, .cta-wrap, .credit { margin-top: 64px; padding: 0 10px; }
+  .credit-inner { grid-template-columns: minmax(0, 1fr); padding: 28px 22px; }
+  .band-bigtext { white-space: normal; }
+  .titleblock dd { white-space: normal; }
+}
+@media (max-width: 480px) {
+  .kpis { grid-template-columns: minmax(0, 1fr); }
+  .kpi { padding: 18px; }
+  .hero-panel .nav { gap: 10px; }
+  .nav-brand { gap: 8px; font-size: 13.5px; white-space: nowrap; }
+  .nav-brand svg { width: 24px !important; height: 24px !important; }
+  .nav-cta { margin-left: 0; padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring::before, .btn-glow, .ticker-track, .cta-card { animation: none; }
+  .ticker { overflow-x: auto; }
+  .reveal { transform: none; transition: none; }
+  .media-frame img, .media-frame::after, .pill-link-arrow, .btn-glow, .btn-dark, .btn-ghost-dark { transition: none; }
+}
+
 </style>
 
 <div id="root"><p class="boot">Loading simulator…</p></div>
@@ -3597,11 +4046,40 @@ function HeroRing({ value }) {
   );
 }
 
-function HeroSection({ r, point, joint, scenario, settings, githubUrl }) {
+function HeroSection({ r, point, joint, scenario, settings, githubUrl, author }) {
   const [view, setView] = React.useState("cost");
+  const panelRef = React.useRef(null);
   const start = scenario.startDate;
   const distLabel = settings.distribution === "pert" ? "Beta-PERT" : "Triangular";
   const corrCount = r.appliedCorrelations ? r.appliedCorrelations.length : 0;
+
+  function onMove(e) {
+    if (e.pointerType !== "mouse") return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    panel.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+    panel.style.setProperty("--my", `${e.clientY - rect.top}px`);
+  }
+
+  function onLeave() {
+    const panel = panelRef.current;
+    if (!panel) return;
+    panel.style.removeProperty("--mx");
+    panel.style.removeProperty("--my");
+  }
+
+  React.useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      panel.classList.toggle("is-offscreen", !entry.isIntersecting);
+    });
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
 
   const tabs = [
     { key: "cost", label: "Cost risk" },
@@ -3795,108 +4273,348 @@ function HeroSection({ r, point, joint, scenario, settings, githubUrl }) {
 
   return (
     <header className="hero" id="top">
-      <p className="hero-badge">
-        <span className="hero-badge-dot"></span>
-        Live Monte Carlo model · 132 kV substation
-      </p>
-      <h1 className="hero-title">
-        Know the real finish date
-        <br />
-        and budget before you commit.
-      </h1>
-      <p className="hero-sub">
-        10,000 simulated futures of a substation upgrade. Move any estimate and watch the risk move with it.
-      </p>
-      <div className="hero-actions">
-        <a className="btn-primary" href="#model">Try the live model</a>
-        <a className="btn-ghost" href={githubUrl} target="_blank" rel="noopener noreferrer">View the code</a>
-      </div>
-
-      <div className="pill-switch" role="tablist" aria-label="Showcase view">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={view === t.key}
-            className={"pill-tab" + (view === t.key ? " is-on" : "")}
-            onClick={() => setView(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="showcase">
-        <ArtSkyline className="showcase-art" />
-        <div className="frame">
-          <div className="frame-rail" aria-hidden="true">
-            <span className="frame-rail-btn is-on"><ArtIcon name="grid" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="coin" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="calendar" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="bolt" size={18} /></span>
-          </div>
-          <div className="frame-main">
-            <div className="frame-head">
-              <h2 className="frame-title">{scenario.name}</h2>
-              <div className="frame-chips">
-                <span className="frame-chip">{distLabel}</span>
-                <span className="frame-chip">{r.n.toLocaleString("en-US")} runs</span>
-                <span className="frame-chip">{corrCount > 0 ? `${corrCount} correlations` : "Independent inputs"}</span>
-              </div>
-            </div>
-            <div className="frame-tabs" role="tablist">
-              {frameTabs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === t.key}
-                  className={"frame-tab" + (view === t.key ? " is-on" : "")}
-                  onClick={() => setView(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="frame-grid">{cards}</div>
-          </div>
+      <div className="hero-panel" ref={panelRef} onPointerMove={onMove} onPointerLeave={onLeave}>
+        <div className="hero-light" aria-hidden="true"></div>
+        <div className="hero-rings" aria-hidden="true">
+          <span className="ring ring-1"></span>
+          <span className="ring ring-2"></span>
+          <span className="ring ring-3"></span>
         </div>
-        {floatCard}
+        <div className="grain" aria-hidden="true"></div>
+        <HeroNav githubUrl={githubUrl} author={author} />
+        <p className="hero-badge">
+          <span className="hero-badge-dot"></span>
+          Live Monte Carlo model · 132 kV substation
+        </p>
+        <h1 className="hero-title">Know the <span className="grad">real</span> finish date<br /> and budget before you commit.</h1>
+        <p className="hero-sub">
+          10,000 simulated futures of a substation upgrade. Move any estimate and watch the risk move with it.
+        </p>
+        <div className="hero-actions">
+          <a className="btn-glow" href="#model"><span className="btn-glow-inner">Try the live model</span></a>
+          <a className="btn-ghost" href={githubUrl} target="_blank" rel="noopener noreferrer">View the code</a>
+        </div>
+
+        <div className="pill-switch" role="tablist" aria-label="Showcase view">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={view === t.key}
+              className={"pill-tab" + (view === t.key ? " is-on" : "")}
+              onClick={() => setView(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="showcase">
+          <ArtSkyline className="showcase-art" />
+          <div className="frame">
+            <div className="frame-rail" aria-hidden="true">
+              <span className="frame-rail-btn is-on"><ArtIcon name="grid" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="coin" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="calendar" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="bolt" size={18} /></span>
+            </div>
+            <div className="frame-main">
+              <div className="frame-head">
+                <h2 className="frame-title">{scenario.name}</h2>
+                <div className="frame-chips">
+                  <span className="frame-chip">{distLabel}</span>
+                  <span className="frame-chip">{r.n.toLocaleString("en-US")} runs</span>
+                  <span className="frame-chip">{corrCount > 0 ? `${corrCount} correlations` : "Independent inputs"}</span>
+                </div>
+              </div>
+              <div className="frame-tabs" role="tablist">
+                {frameTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === t.key}
+                    className={"frame-tab" + (view === t.key ? " is-on" : "")}
+                    onClick={() => setView(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="frame-grid">{cards}</div>
+            </div>
+          </div>
+          {floatCard}
+        </div>
       </div>
     </header>
   );
 }
 
-function HeroFeatures() {
-  const items = [
-    {
-      art: <ArtTransformer />,
-      title: "Three-point estimates",
-      text: "Give every activity and cost an optimistic, likely and pessimistic value. Beta-PERT or triangular — your call.",
-    },
-    {
-      art: <ArtPylon />,
-      title: "Critical path, every run",
-      text: "The activity network is re-solved in each of 10,000 runs, so you see how often each activity actually drives the finish.",
-    },
-    {
-      art: <ArtSwitchgear />,
-      title: "Correlated risks",
-      text: "Link estimates that move together, like transformer price and lead time, and watch the tail widen while the average stays put.",
-    },
-  ];
+</script>
+<script type="text/babel" data-presets="react">
+// Landing-page section components for the substation risk simulator.
+// Pure presentational components (plus one scroll-reveal effect hook).
+// All copy comes from props; no imports/exports (shared global scope).
+
+function SiteTicker({ items }) {
   return (
-    <section className="features" aria-label="What it does">
-      {items.map((it) => (
-        <div className="feature" key={it.title}>
-          <div className="feature-art">{it.art}</div>
-          <h3 className="feature-title">{it.title}</h3>
-          <p className="feature-text">{it.text}</p>
+    <div className="ticker" role="region" aria-label="Live results">
+      <div className="ticker-track">
+        {items.map((text, i) => (
+          <span className="ticker-item" key={"ticker-a-" + i}>
+            {text}
+          </span>
+        ))}
+        <span className="ticker-copy" aria-hidden="true">
+          {items.map((text, i) => (
+            <span className="ticker-item" key={"ticker-b-" + i}>
+              {text}
+            </span>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SiteSplit({
+  id,
+  tone,
+  flip,
+  eyebrow,
+  heading,
+  image,
+  linkHref,
+  linkLabel = "Know More",
+  children,
+}) {
+  const titleId = id + "-title";
+  return (
+    <section
+      className={"split split-" + tone + (flip ? " split-flip" : "")}
+      id={id}
+      aria-labelledby={titleId}
+    >
+      <div className="split-inner">
+        <figure className="split-media">
+          <div className="media-frame">
+            <img
+              src={image.src}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          {image.caption ? (
+            <figcaption className="media-caption">{image.caption}</figcaption>
+          ) : null}
+        </figure>
+        <div className="split-copy reveal">
+          <p className="eyebrow">{eyebrow}</p>
+          <h2 className="split-heading" id={titleId}>
+            {heading}
+          </h2>
+          <div className="split-text">{children}</div>
+          <a className="pill-link" href={linkHref}>
+            <span>{linkLabel}</span>
+            <span className="pill-link-arrow" aria-hidden="true">
+              →
+            </span>
+          </a>
         </div>
-      ))}
+      </div>
     </section>
   );
+}
+
+function SiteBand({ bigText, stats }) {
+  return (
+    <section className="band" aria-labelledby="band-title">
+      <h2 className="sr" id="band-title">
+        Key results
+      </h2>
+      <p className="band-bigtext" aria-hidden="true">
+        {bigText}
+      </p>
+      <div className="band-panel">
+        <ul className="kpis">
+          {stats.map((s, i) => (
+            <li className="kpi reveal" key={"kpi-" + i}>
+              <span className="kpi-value">{s.value}</span>
+              <span className="kpi-label">{s.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function SiteNotes({ notes, caseStudyUrl }) {
+  return (
+    <section className="notes" id="notes" aria-labelledby="notes-title">
+      <div className="notes-head">
+        <p className="eyebrow">Engineering notes</p>
+        <h2 className="notes-title" id="notes-title">
+          What broke, and what fixed it
+        </h2>
+        <p className="notes-sub">
+          Four real problems from building this simulator, with the
+          measurement that confirmed each fix.
+        </p>
+      </div>
+      <ul className="notes-list">
+        {notes.map((n, i) => (
+          <li className="note reveal" key={"note-" + i}>
+            <div className="note-metric">
+              <span className="note-metric-value">{n.metric}</span>
+              <span className="note-metric-label">{n.metricLabel}</span>
+            </div>
+            <h3 className="note-title">{n.title}</h3>
+            <p className="note-body">
+              <strong>Problem.</strong> {n.problem}
+            </p>
+            <p className="note-body">
+              <strong>Fix.</strong> {n.fix}
+            </p>
+            {n.commit ? (
+              <p className="note-commit">
+                Commit <code>{n.commit}</code>
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <a
+        className="pill-link"
+        href={caseStudyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span>Read the case study</span>
+        <span className="pill-link-arrow" aria-hidden="true">
+          →
+        </span>
+      </a>
+    </section>
+  );
+}
+
+function SiteCta({ title, text, primary, secondary }) {
+  return (
+    <section className="cta-wrap" aria-labelledby="cta-title">
+      <div className="cta-card">
+        <div className="grain" aria-hidden="true"></div>
+        <h2 className="cta-title" id="cta-title">
+          {title}
+        </h2>
+        <p className="cta-text">{text}</p>
+        <div className="cta-actions">
+          <a className="btn-dark" href={primary.href}>
+            {primary.label}
+          </a>
+          <a
+            className="btn-ghost-dark"
+            href={secondary.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {secondary.label}
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SiteCredit({ name, role, linkedin, github }) {
+  return (
+    <section className="credit" aria-labelledby="credit-title">
+      <div className="credit-inner">
+        <div>
+          <p className="eyebrow">Designed and built by</p>
+          <h2 className="credit-name" id="credit-title">
+            {name}
+          </h2>
+          <p className="credit-role">{role}</p>
+        </div>
+        <div className="credit-links">
+          <a
+            className="pill-link"
+            href={linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>LinkedIn</span>
+            <span className="pill-link-arrow" aria-hidden="true">
+              ↗
+            </span>
+          </a>
+          <a
+            className="pill-link"
+            href={github}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>GitHub</span>
+            <span className="pill-link-arrow" aria-hidden="true">
+              ↗
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SiteFooter({ name }) {
+  return (
+    <footer className="site-foot">
+      <ArtSkyline className="foot-art" />
+      <div className="foot-row">
+        <span>© 2026 {name}</span>
+        <span>Monte Carlo cost and schedule risk simulator</span>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+  );
+}
+
+function SiteReveal() {
+  React.useEffect(() => {
+    const elements = Array.from(document.querySelectorAll(".reveal"));
+
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion || typeof IntersectionObserver === "undefined") {
+      elements.forEach((el) => el.classList.add("is-in"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.12 }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  return null;
 }
 
 </script>
@@ -3904,6 +4622,66 @@ function HeroFeatures() {
 const AppSettingsBaseline = { iterations: 10000, seed: 20261001, distribution: "pert", bins: 40, correlate: true };
 const AppAuthor = { name: "Ayman Khayat", linkedin: "https://www.linkedin.com/in/ayman-khayat-350b4b335" };
 const AppRepo = "https://github.com/aymankhayat/substation-risk-simulator";
+const AppCaseStudy = AppRepo + "/blob/main/CASE_STUDY.md";
+
+const AppShots = {
+  model: {
+    src: "assets/shot-live-model.jpg",
+    alt: "The live model: P80 completion, P80 cost and joint-probability cards above the confidence table and the total-cost charts",
+    width: 1600,
+    height: 1147,
+    caption: "Real screenshot · live model",
+  },
+  network: {
+    src: "assets/shot-network.jpg",
+    alt: "Activity network with the critical path highlighted in amber, above the criticality index bars",
+    width: 1600,
+    height: 1083,
+    caption: "Real screenshot · critical path",
+  },
+  drivers: {
+    src: "assets/shot-drivers.jpg",
+    alt: "Tornado charts showing which inputs move total cost and completion the most",
+    width: 1600,
+    height: 1013,
+    caption: "Real screenshot · risk drivers",
+  },
+};
+
+const AppNotes = [
+  {
+    title: "Re-running 10,000 futures while you drag",
+    metric: "3.2×",
+    metricLabel: "faster reruns: 554 ms → 173 ms",
+    problem: "The first engine needed about 554 ms for 10,000 runs and 4.5 s for 50,000, so every slider drag stuttered. Profiling showed the time going into comparator sorts and into re-ranking the same output series for every input.",
+    fix: "Native typed-array sorts with binary-search ranks shared by both tornado charts, sensitivity measured on the first 10,000 runs, and Beta-PERT sampled from a cached 2,048-point inverse-CDF table. 50,000 runs fell to about 0.33 s.",
+    commit: null,
+  },
+  {
+    title: "Correlated risks without bending the inputs",
+    metric: "±0.003",
+    metricLabel: "achieved vs target rank correlation",
+    problem: "Sampling every estimate independently understates the tail: a tight transformer market makes the unit both more expensive and later.",
+    fix: "Iman–Conover reordering with van der Waerden scores, which keeps every input's own distribution. Achieved correlations of 0.501, 0.603 and 0.403 against targets of 0.5, 0.6 and 0.4; switched off, the engine reproduces the independent P80 of $21,393,208 exactly.",
+    commit: null,
+  },
+  {
+    title: "Charts that stay legible in any card",
+    metric: "11 px",
+    metricLabel: "labels drawn at true size, up from 4–7 px",
+    problem: "Every chart drew into a fixed 820-unit canvas and was scaled down into cards 270–500 px wide, so 11 px labels ended up 4–7 px tall.",
+    fix: "Each chart now measures its container and draws at 1:1, with tick counts and label columns that adapt to the available width.",
+    commit: null,
+  },
+  {
+    title: "An activity network that fits its card",
+    metric: "506 > 482 px",
+    metricLabel: "width needed vs available at 1440 px",
+    problem: "On a 1440 px desktop the network needed about 506 px but its half-width card offered about 482 px, so the final activity hid behind a horizontal scroll.",
+    fix: "The network now spans the full row with the criticality index below it, so all five activities fit with their full names.",
+    commit: "ef1e6f0",
+  },
+];
 const AppMono = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
 const AppDisplay = { fontFamily: "var(--font-display)", fontWeight: 600 };
 
@@ -4180,6 +4958,24 @@ function App() {
   const costMarkers = AppMarkers(r.costStats);
   const durMarkers = AppMarkers(r.durationStats);
   const pairCount = scenario.correlations.length;
+  const floatEntries = Object.entries(point.float || {}).sort((a, b) => b[1] - a[1]);
+  const floatTask = floatEntries.length && floatEntries[0][1] >= 1 ? scenario.tasks.find((t) => t.id === floatEntries[0][0]) : null;
+  const tickerItems = [
+    "P80 budget " + scnFmtMoney(r.costStats.p80),
+    "P80 energisation " + scnFmtDate(start, r.durationStats.p80),
+    "Point estimate " + scnFmtMoney(point.cost),
+    "Contingency " + AppSigned(r.costStats.p80 - point.cost, scnFmtMoney) + " / " + AppSigned(r.durationStats.p80 - point.duration, scnFmtDays),
+    r.n.toLocaleString("en-US") + " simulated runs",
+    "Both P80s met in " + scnFmtPct(joint) + " of runs",
+    floatTask ? floatTask.short + " float " + scnFmtDays(floatEntries[0][1]) : null,
+    ...(r.appliedCorrelations || []).map((c) => c.id + " achieved ρ " + scnFmtRho(c.achieved)),
+  ].filter(Boolean);
+  const bandStats = [
+    { value: r.n.toLocaleString("en-US"), label: "simulated futures per change" },
+    { value: scnFmtMoney(r.costStats.p80), label: "P80 budget" },
+    { value: scnFmtDate(start, r.durationStats.p80), label: "P80 energisation" },
+    { value: scnFmtPct(joint), label: "of runs meet both P80 targets" },
+  ];
 
   const updateTask = (id, patch) =>
     setScenario((s) => ({ ...s, tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
@@ -4216,9 +5012,29 @@ function App() {
 
   return (
     <div className="site">
-      <HeroNav githubUrl={AppRepo} author={AppAuthor.name} />
-      <HeroSection r={r} point={point} joint={joint} scenario={scenario} settings={settings} githubUrl={AppRepo} />
-      <HeroFeatures />
+      <SiteReveal />
+      <HeroSection r={r} point={point} joint={joint} scenario={scenario} settings={settings} githubUrl={AppRepo} author={AppAuthor.name} />
+      <SiteTicker items={tickerItems} />
+      <SiteSplit id="cost-story" tone="light" eyebrow="Cost risk" heading="Fund the P80, not the point estimate" image={AppShots.model} linkHref="#total-cost">
+        <p>
+          In the default scenario the most-likely values add up to $19.55M. Across 10,000 simulated futures the budget you can
+          defend with 80% confidence is $21.54M, because the ranges skew late and expensive and site overhead keeps running while the
+          transformer is on order.
+        </p>
+      </SiteSplit>
+      <SiteSplit id="schedule-story" tone="dark" flip eyebrow="Schedule logic" heading="The transformer path governs the finish" image={AppShots.network} linkHref="#critical-path">
+        <p>
+          Every run re-solves the activity network with a forward and backward pass. Transformer procurement sits on the critical
+          path in 100% of runs, while civil works carries about 340 days of float and never drives the finish.
+        </p>
+      </SiteSplit>
+      <SiteBand bigText="10,000 futures" stats={bandStats} />
+      <SiteSplit id="drivers-story" tone="light" eyebrow="Risk drivers" heading="See what actually moves the numbers" image={AppShots.drivers} linkHref="#risk-drivers">
+        <p>
+          Each tornado bar swings one input from its own P10 to its P90. The transformer's supply price leads the cost risk at
+          $1.77M, and its procurement time is a top-five cost driver purely through per-day overhead and price escalation.
+        </p>
+      </SiteSplit>
       <section className="model" id="model" aria-labelledby="model-title">
         <div className="model-intro">
           <p className="eyebrow">Live model</p>
@@ -4327,7 +5143,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Total cost</h2>
+              <h2 id="total-cost">Total cost</h2>
               <p>Includes per-day costs, so a late project is also an expensive one.</p>
             </header>
             <div className="pair">
@@ -4357,7 +5173,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Risk drivers</h2>
+              <h2 id="risk-drivers">Risk drivers</h2>
               <div className="seg" role="group" aria-label="Sensitivity method">
                 <button type="button" className={"seg-btn" + (tornadoMode === "swing" ? " is-on" : "")} aria-pressed={tornadoMode === "swing"} onClick={() => setTornadoMode("swing")}>
                   Swing P10–P90
@@ -4392,7 +5208,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Critical path</h2>
+              <h2 id="critical-path">Critical path</h2>
               <p>Copper marks the path that governs completion in most runs.</p>
             </header>
             <div className="pair pair-wide">
@@ -4451,6 +5267,20 @@ function App() {
       </div>
     </div>
       </section>
+      <SiteNotes notes={AppNotes} caseStudyUrl={AppCaseStudy} />
+      <SiteCta
+        title="Stress-test the substation yourself"
+        text="Drag a duration, link two estimates or switch to triangular. The P80 budget and date recalculate in your browser in a fraction of a second."
+        primary={{ href: "#model", label: "Open the live model" }}
+        secondary={{ href: AppRepo, label: "View the code" }}
+      />
+      <SiteCredit
+        name={AppAuthor.name}
+        role="Scoped the problem, chose the modelling approach and verified every number; built with AI-assisted development."
+        linkedin={AppAuthor.linkedin}
+        github={AppRepo}
+      />
+      <SiteFooter name={AppAuthor.name} />
     </div>
   );
 }

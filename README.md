@@ -4,7 +4,7 @@ Monte Carlo cost and schedule risk analysis for a capital engineering project, r
 
 Designed and built by **Ayman Khayat** · [LinkedIn](https://www.linkedin.com/in/ayman-khayat-350b4b335)
 
-**Live demo:** [aymankhayat.github.io/substation-risk-simulator](https://aymankhayat.github.io/substation-risk-simulator/)
+**Live demo:** [aymankhayat.github.io/substation-risk-simulator](https://aymankhayat.github.io/substation-risk-simulator/) · **Case study:** [CASE_STUDY.md](CASE_STUDY.md)
 
 ![Screenshot](docs/screenshot.png)
 
@@ -70,8 +70,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/assemble.ps1
 | `src/panel.jsx` | Input controls |
 | `src/hero.jsx` | Landing hero and live product showcase |
 | `src/art.jsx` | Custom SVG illustrations of substation equipment |
+| `src/site.jsx` | Landing sections: live ticker, story sections, KPI band, engineering notes, credit |
+| `src/site.css` | Landing styles and effects: grain, glowing rings, conic CTA border, reveal |
+| `tools/og-card.html` | Source for the 1200×627 share image in `assets/og-card.png` |
 | `src/app.jsx` | Page composition and state |
 | `src/shell.html` | Styles, theme tokens and page template |
+
+## Before and after
+
+Full-page captures of the portfolio upgrade: [before (desktop)](docs/screenshots/before/desktop.png) · [after (desktop)](docs/screenshots/after/desktop.png) · [after (375 px mobile hero)](docs/screenshots/after/mobile-hero.png). All imagery on the site is real screenshots of the running model; no AI-generated images are used.
 
 ## Environment variables
 

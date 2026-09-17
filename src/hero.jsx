@@ -232,11 +232,40 @@ function HeroRing({ value }) {
   );
 }
 
-function HeroSection({ r, point, joint, scenario, settings, githubUrl }) {
+function HeroSection({ r, point, joint, scenario, settings, githubUrl, author }) {
   const [view, setView] = React.useState("cost");
+  const panelRef = React.useRef(null);
   const start = scenario.startDate;
   const distLabel = settings.distribution === "pert" ? "Beta-PERT" : "Triangular";
   const corrCount = r.appliedCorrelations ? r.appliedCorrelations.length : 0;
+
+  function onMove(e) {
+    if (e.pointerType !== "mouse") return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    panel.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+    panel.style.setProperty("--my", `${e.clientY - rect.top}px`);
+  }
+
+  function onLeave() {
+    const panel = panelRef.current;
+    if (!panel) return;
+    panel.style.removeProperty("--mx");
+    panel.style.removeProperty("--my");
+  }
+
+  React.useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      panel.classList.toggle("is-offscreen", !entry.isIntersecting);
+    });
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
 
   const tabs = [
     { key: "cost", label: "Cost risk" },
@@ -430,106 +459,81 @@ function HeroSection({ r, point, joint, scenario, settings, githubUrl }) {
 
   return (
     <header className="hero" id="top">
-      <p className="hero-badge">
-        <span className="hero-badge-dot"></span>
-        Live Monte Carlo model · 132 kV substation
-      </p>
-      <h1 className="hero-title">
-        Know the real finish date
-        <br />
-        and budget before you commit.
-      </h1>
-      <p className="hero-sub">
-        10,000 simulated futures of a substation upgrade. Move any estimate and watch the risk move with it.
-      </p>
-      <div className="hero-actions">
-        <a className="btn-primary" href="#model">Try the live model</a>
-        <a className="btn-ghost" href={githubUrl} target="_blank" rel="noopener noreferrer">View the code</a>
-      </div>
-
-      <div className="pill-switch" role="tablist" aria-label="Showcase view">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={view === t.key}
-            className={"pill-tab" + (view === t.key ? " is-on" : "")}
-            onClick={() => setView(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="showcase">
-        <ArtSkyline className="showcase-art" />
-        <div className="frame">
-          <div className="frame-rail" aria-hidden="true">
-            <span className="frame-rail-btn is-on"><ArtIcon name="grid" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="coin" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="calendar" size={18} /></span>
-            <span className="frame-rail-btn"><ArtIcon name="bolt" size={18} /></span>
-          </div>
-          <div className="frame-main">
-            <div className="frame-head">
-              <h2 className="frame-title">{scenario.name}</h2>
-              <div className="frame-chips">
-                <span className="frame-chip">{distLabel}</span>
-                <span className="frame-chip">{r.n.toLocaleString("en-US")} runs</span>
-                <span className="frame-chip">{corrCount > 0 ? `${corrCount} correlations` : "Independent inputs"}</span>
-              </div>
-            </div>
-            <div className="frame-tabs" role="tablist">
-              {frameTabs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === t.key}
-                  className={"frame-tab" + (view === t.key ? " is-on" : "")}
-                  onClick={() => setView(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="frame-grid">{cards}</div>
-          </div>
+      <div className="hero-panel" ref={panelRef} onPointerMove={onMove} onPointerLeave={onLeave}>
+        <div className="hero-light" aria-hidden="true"></div>
+        <div className="hero-rings" aria-hidden="true">
+          <span className="ring ring-1"></span>
+          <span className="ring ring-2"></span>
+          <span className="ring ring-3"></span>
         </div>
-        {floatCard}
+        <div className="grain" aria-hidden="true"></div>
+        <HeroNav githubUrl={githubUrl} author={author} />
+        <p className="hero-badge">
+          <span className="hero-badge-dot"></span>
+          Live Monte Carlo model · 132 kV substation
+        </p>
+        <h1 className="hero-title">Know the <span className="grad">real</span> finish date<br /> and budget before you commit.</h1>
+        <p className="hero-sub">
+          10,000 simulated futures of a substation upgrade. Move any estimate and watch the risk move with it.
+        </p>
+        <div className="hero-actions">
+          <a className="btn-glow" href="#model"><span className="btn-glow-inner">Try the live model</span></a>
+          <a className="btn-ghost" href={githubUrl} target="_blank" rel="noopener noreferrer">View the code</a>
+        </div>
+
+        <div className="pill-switch" role="tablist" aria-label="Showcase view">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={view === t.key}
+              className={"pill-tab" + (view === t.key ? " is-on" : "")}
+              onClick={() => setView(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="showcase">
+          <ArtSkyline className="showcase-art" />
+          <div className="frame">
+            <div className="frame-rail" aria-hidden="true">
+              <span className="frame-rail-btn is-on"><ArtIcon name="grid" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="coin" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="calendar" size={18} /></span>
+              <span className="frame-rail-btn"><ArtIcon name="bolt" size={18} /></span>
+            </div>
+            <div className="frame-main">
+              <div className="frame-head">
+                <h2 className="frame-title">{scenario.name}</h2>
+                <div className="frame-chips">
+                  <span className="frame-chip">{distLabel}</span>
+                  <span className="frame-chip">{r.n.toLocaleString("en-US")} runs</span>
+                  <span className="frame-chip">{corrCount > 0 ? `${corrCount} correlations` : "Independent inputs"}</span>
+                </div>
+              </div>
+              <div className="frame-tabs" role="tablist">
+                {frameTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === t.key}
+                    className={"frame-tab" + (view === t.key ? " is-on" : "")}
+                    onClick={() => setView(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="frame-grid">{cards}</div>
+            </div>
+          </div>
+          {floatCard}
+        </div>
       </div>
     </header>
-  );
-}
-
-function HeroFeatures() {
-  const items = [
-    {
-      art: <ArtTransformer />,
-      title: "Three-point estimates",
-      text: "Give every activity and cost an optimistic, likely and pessimistic value. Beta-PERT or triangular — your call.",
-    },
-    {
-      art: <ArtPylon />,
-      title: "Critical path, every run",
-      text: "The activity network is re-solved in each of 10,000 runs, so you see how often each activity actually drives the finish.",
-    },
-    {
-      art: <ArtSwitchgear />,
-      title: "Correlated risks",
-      text: "Link estimates that move together, like transformer price and lead time, and watch the tail widen while the average stays put.",
-    },
-  ];
-  return (
-    <section className="features" aria-label="What it does">
-      {items.map((it) => (
-        <div className="feature" key={it.title}>
-          <div className="feature-art">{it.art}</div>
-          <h3 className="feature-title">{it.title}</h3>
-          <p className="feature-text">{it.text}</p>
-        </div>
-      ))}
-    </section>
   );
 }

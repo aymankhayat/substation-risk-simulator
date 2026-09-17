@@ -1,6 +1,66 @@
 const AppSettingsBaseline = { iterations: 10000, seed: 20261001, distribution: "pert", bins: 40, correlate: true };
 const AppAuthor = { name: "Ayman Khayat", linkedin: "https://www.linkedin.com/in/ayman-khayat-350b4b335" };
 const AppRepo = "https://github.com/aymankhayat/substation-risk-simulator";
+const AppCaseStudy = AppRepo + "/blob/main/CASE_STUDY.md";
+
+const AppShots = {
+  model: {
+    src: "assets/shot-live-model.jpg",
+    alt: "The live model: P80 completion, P80 cost and joint-probability cards above the confidence table and the total-cost charts",
+    width: 1600,
+    height: 1147,
+    caption: "Real screenshot · live model",
+  },
+  network: {
+    src: "assets/shot-network.jpg",
+    alt: "Activity network with the critical path highlighted in amber, above the criticality index bars",
+    width: 1600,
+    height: 1083,
+    caption: "Real screenshot · critical path",
+  },
+  drivers: {
+    src: "assets/shot-drivers.jpg",
+    alt: "Tornado charts showing which inputs move total cost and completion the most",
+    width: 1600,
+    height: 1013,
+    caption: "Real screenshot · risk drivers",
+  },
+};
+
+const AppNotes = [
+  {
+    title: "Re-running 10,000 futures while you drag",
+    metric: "3.2×",
+    metricLabel: "faster reruns: 554 ms → 173 ms",
+    problem: "The first engine needed about 554 ms for 10,000 runs and 4.5 s for 50,000, so every slider drag stuttered. Profiling showed the time going into comparator sorts and into re-ranking the same output series for every input.",
+    fix: "Native typed-array sorts with binary-search ranks shared by both tornado charts, sensitivity measured on the first 10,000 runs, and Beta-PERT sampled from a cached 2,048-point inverse-CDF table. 50,000 runs fell to about 0.33 s.",
+    commit: null,
+  },
+  {
+    title: "Correlated risks without bending the inputs",
+    metric: "±0.003",
+    metricLabel: "achieved vs target rank correlation",
+    problem: "Sampling every estimate independently understates the tail: a tight transformer market makes the unit both more expensive and later.",
+    fix: "Iman–Conover reordering with van der Waerden scores, which keeps every input's own distribution. Achieved correlations of 0.501, 0.603 and 0.403 against targets of 0.5, 0.6 and 0.4; switched off, the engine reproduces the independent P80 of $21,393,208 exactly.",
+    commit: null,
+  },
+  {
+    title: "Charts that stay legible in any card",
+    metric: "11 px",
+    metricLabel: "labels drawn at true size, up from 4–7 px",
+    problem: "Every chart drew into a fixed 820-unit canvas and was scaled down into cards 270–500 px wide, so 11 px labels ended up 4–7 px tall.",
+    fix: "Each chart now measures its container and draws at 1:1, with tick counts and label columns that adapt to the available width.",
+    commit: null,
+  },
+  {
+    title: "An activity network that fits its card",
+    metric: "506 > 482 px",
+    metricLabel: "width needed vs available at 1440 px",
+    problem: "On a 1440 px desktop the network needed about 506 px but its half-width card offered about 482 px, so the final activity hid behind a horizontal scroll.",
+    fix: "The network now spans the full row with the criticality index below it, so all five activities fit with their full names.",
+    commit: "ef1e6f0",
+  },
+];
 const AppMono = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
 const AppDisplay = { fontFamily: "var(--font-display)", fontWeight: 600 };
 
@@ -277,6 +337,24 @@ function App() {
   const costMarkers = AppMarkers(r.costStats);
   const durMarkers = AppMarkers(r.durationStats);
   const pairCount = scenario.correlations.length;
+  const floatEntries = Object.entries(point.float || {}).sort((a, b) => b[1] - a[1]);
+  const floatTask = floatEntries.length && floatEntries[0][1] >= 1 ? scenario.tasks.find((t) => t.id === floatEntries[0][0]) : null;
+  const tickerItems = [
+    "P80 budget " + scnFmtMoney(r.costStats.p80),
+    "P80 energisation " + scnFmtDate(start, r.durationStats.p80),
+    "Point estimate " + scnFmtMoney(point.cost),
+    "Contingency " + AppSigned(r.costStats.p80 - point.cost, scnFmtMoney) + " / " + AppSigned(r.durationStats.p80 - point.duration, scnFmtDays),
+    r.n.toLocaleString("en-US") + " simulated runs",
+    "Both P80s met in " + scnFmtPct(joint) + " of runs",
+    floatTask ? floatTask.short + " float " + scnFmtDays(floatEntries[0][1]) : null,
+    ...(r.appliedCorrelations || []).map((c) => c.id + " achieved ρ " + scnFmtRho(c.achieved)),
+  ].filter(Boolean);
+  const bandStats = [
+    { value: r.n.toLocaleString("en-US"), label: "simulated futures per change" },
+    { value: scnFmtMoney(r.costStats.p80), label: "P80 budget" },
+    { value: scnFmtDate(start, r.durationStats.p80), label: "P80 energisation" },
+    { value: scnFmtPct(joint), label: "of runs meet both P80 targets" },
+  ];
 
   const updateTask = (id, patch) =>
     setScenario((s) => ({ ...s, tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
@@ -313,9 +391,29 @@ function App() {
 
   return (
     <div className="site">
-      <HeroNav githubUrl={AppRepo} author={AppAuthor.name} />
-      <HeroSection r={r} point={point} joint={joint} scenario={scenario} settings={settings} githubUrl={AppRepo} />
-      <HeroFeatures />
+      <SiteReveal />
+      <HeroSection r={r} point={point} joint={joint} scenario={scenario} settings={settings} githubUrl={AppRepo} author={AppAuthor.name} />
+      <SiteTicker items={tickerItems} />
+      <SiteSplit id="cost-story" tone="light" eyebrow="Cost risk" heading="Fund the P80, not the point estimate" image={AppShots.model} linkHref="#total-cost">
+        <p>
+          In the default scenario the most-likely values add up to $19.55M. Across 10,000 simulated futures the budget you can
+          defend with 80% confidence is $21.54M, because the ranges skew late and expensive and site overhead keeps running while the
+          transformer is on order.
+        </p>
+      </SiteSplit>
+      <SiteSplit id="schedule-story" tone="dark" flip eyebrow="Schedule logic" heading="The transformer path governs the finish" image={AppShots.network} linkHref="#critical-path">
+        <p>
+          Every run re-solves the activity network with a forward and backward pass. Transformer procurement sits on the critical
+          path in 100% of runs, while civil works carries about 340 days of float and never drives the finish.
+        </p>
+      </SiteSplit>
+      <SiteBand bigText="10,000 futures" stats={bandStats} />
+      <SiteSplit id="drivers-story" tone="light" eyebrow="Risk drivers" heading="See what actually moves the numbers" image={AppShots.drivers} linkHref="#risk-drivers">
+        <p>
+          Each tornado bar swings one input from its own P10 to its P90. The transformer's supply price leads the cost risk at
+          $1.77M, and its procurement time is a top-five cost driver purely through per-day overhead and price escalation.
+        </p>
+      </SiteSplit>
       <section className="model" id="model" aria-labelledby="model-title">
         <div className="model-intro">
           <p className="eyebrow">Live model</p>
@@ -424,7 +522,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Total cost</h2>
+              <h2 id="total-cost">Total cost</h2>
               <p>Includes per-day costs, so a late project is also an expensive one.</p>
             </header>
             <div className="pair">
@@ -454,7 +552,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Risk drivers</h2>
+              <h2 id="risk-drivers">Risk drivers</h2>
               <div className="seg" role="group" aria-label="Sensitivity method">
                 <button type="button" className={"seg-btn" + (tornadoMode === "swing" ? " is-on" : "")} aria-pressed={tornadoMode === "swing"} onClick={() => setTornadoMode("swing")}>
                   Swing P10–P90
@@ -489,7 +587,7 @@ function App() {
 
           <section className="block">
             <header className="block-head">
-              <h2>Critical path</h2>
+              <h2 id="critical-path">Critical path</h2>
               <p>Copper marks the path that governs completion in most runs.</p>
             </header>
             <div className="pair pair-wide">
@@ -548,6 +646,20 @@ function App() {
       </div>
     </div>
       </section>
+      <SiteNotes notes={AppNotes} caseStudyUrl={AppCaseStudy} />
+      <SiteCta
+        title="Stress-test the substation yourself"
+        text="Drag a duration, link two estimates or switch to triangular. The P80 budget and date recalculate in your browser in a fraction of a second."
+        primary={{ href: "#model", label: "Open the live model" }}
+        secondary={{ href: AppRepo, label: "View the code" }}
+      />
+      <SiteCredit
+        name={AppAuthor.name}
+        role="Scoped the problem, chose the modelling approach and verified every number; built with AI-assisted development."
+        linkedin={AppAuthor.linkedin}
+        github={AppRepo}
+      />
+      <SiteFooter name={AppAuthor.name} />
     </div>
   );
 }
