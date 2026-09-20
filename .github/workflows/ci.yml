@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Engine tests and build check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Analytic test vectors for the simulation engine: distributions, critical
+      # path, rank correlation and the end-to-end deterministic case.
+      - name: Run engine tests
+        run: node tests/engine.test.mjs
+
+      # index.html is committed so GitHub Pages can serve it with no build step.
+      # This fails if it has drifted from the modules in src/.
+      - name: Check index.html matches src/
+        run: node tools/assemble.mjs --check
