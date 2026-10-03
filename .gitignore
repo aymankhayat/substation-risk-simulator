@@ -6,6 +6,15 @@ build/
 .vercel/
 .netlify/
 .claude/
+# Shared assistant config travels with the repo; local session state does not.
+# A cloud session is built from a fresh container, so the skill library has to
+# be reinstalled from here on every start.
+!.claude/
+.claude/*
+!.claude/README.md
+!.claude/settings.json
+!.claude/hooks/
+.claude/settings.local.json
 linkedin/
 .agents/
 .dev/
