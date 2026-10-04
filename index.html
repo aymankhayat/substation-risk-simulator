@@ -1,4 +1,7 @@
+<!doctype html>
+<html lang="en">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Substation Risk Simulator</title>
 <meta name="author" content="Ayman Khayat">
 <meta name="description" content="Monte Carlo cost and schedule risk simulator for a 132 kV substation upgrade, by Ayman Khayat.">
@@ -1171,9 +1174,19 @@ input[type=range].panel-range {
 
 <div id="root"><p class="boot">Loading simulator…</p></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.3/babel.min.js"></script>
+<!-- Pinned with Subresource Integrity: these three scripts run with full page privileges,
+     so the browser is told to refuse any byte sequence the CDN did not serve when the hashes
+     below were taken. Hashes are the sha512 values cdnjs publishes for these exact versions.
+     Bumping a version means recomputing the hash, or the script silently stops loading. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"
+  integrity="sha512-QVs8Lo43F9lSuBykadDb0oSXDL/BbZ588urWVCRwSIoewQv/Ewg1f84mK3U790bZ0FfhFa1YSQUmIhG+pIRKeg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"
+  integrity="sha512-6a1107rTlA4gYpgHAqbwLAtxmWipBdJFcq8y5S/aTge3Bp+VAklABm2LO+Kg51vOWR9JMZq1Ovjl5tpluNpTeQ=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.3/babel.min.js"
+  integrity="sha512-NyQU9Gq/x36ldUUB9k8SEVCUUIJYxFjtwa7Ndz5h6noqqcSGx3nnmdK26bXiVWlo8ZU147EyJlydvFQEF97I/w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 const scnDefaultScenario = {
@@ -5288,3 +5301,4 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </script>
+</html>

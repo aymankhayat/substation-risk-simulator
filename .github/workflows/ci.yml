@@ -26,3 +26,8 @@ jobs:
       # This fails if it has drifted from the modules in src/.
       - name: Check index.html matches src/
         run: node tools/assemble.mjs --check
+
+      # Document-level guarantees that still look fine in a screenshot when broken:
+      # standards mode, page language, the mobile viewport, and SRI on every CDN script.
+      - name: Run page structure and integrity tests
+        run: node tests/page.test.mjs

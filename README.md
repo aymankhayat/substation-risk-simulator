@@ -41,6 +41,7 @@ The default scenario is a 40 MVA 132/33 kV transformer addition at an existing s
 ## Tech stack
 
 - React 18 (UMD build) with JSX compiled in the browser by Babel Standalone — no build step, no npm
+- Both load from cdnjs, pinned with Subresource Integrity so the browser rejects anything the CDN did not serve when the hashes were taken
 - Hand-written SVG charts and line illustrations, with no chart library or image files
 - Plain JavaScript simulation engine, verified against analytic test vectors in [`tests/engine.test.mjs`](tests/engine.test.mjs)
 - IBM Plex type family
@@ -72,6 +73,8 @@ node tools/assemble.mjs
 
 ## Tests
 
+Two suites run in CI.
+
 The simulation engine is checked against closed-form results rather than against recorded output, so a change to the mathematics fails the suite even when the page still renders.
 
 ```bash
@@ -93,7 +96,20 @@ The 32 checks in [`tests/engine.test.mjs`](tests/engine.test.mjs) cover:
 | Iman–Conover | Achieved rank correlation matches the target, and the marginals are unchanged |
 | End to end | A project with degenerate estimates must return its exact deterministic answer |
 
-CI runs the suite on every push and also verifies that the committed `index.html` still matches `src/`.
+The second suite checks the built page itself, for four properties that stay invisible in a screenshot because the page looks and computes exactly the same when they are wrong.
+
+```bash
+node tests/page.test.mjs
+```
+
+| Check | Why it matters |
+|---|---|
+| `<!doctype html>` | Without it the browser falls back to quirks mode |
+| `lang` on `<html>` | Screen readers otherwise guess the pronunciation (WCAG 3.1.1) |
+| Viewport meta | Without it phones render at the 980 px fallback width, so no breakpoint below it ever applies |
+| Subresource Integrity | A compromised CDN could otherwise run arbitrary code with full page privileges |
+
+CI runs both suites on every push and also verifies that the committed `index.html` still matches `src/`.
 
 ## Project structure
 
@@ -111,6 +127,7 @@ CI runs the suite on every push and also verifies that the committed `index.html
 | `src/app.jsx` | Page composition and state |
 | `src/shell.html` | Styles, theme tokens and page template |
 | `tests/engine.test.mjs` | Analytic test vectors for the engine |
+| `tests/page.test.mjs` | Doctype, language, viewport and script-integrity checks on the built page |
 | `tools/assemble.mjs` | Builds `index.html` from `src/`; `--check` verifies it is current |
 | `index.html` | Build artifact, committed so GitHub Pages can serve it directly |
 
