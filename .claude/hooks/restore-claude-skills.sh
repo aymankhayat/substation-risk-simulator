@@ -16,6 +16,10 @@ log() { printf '[claude-skills] %s\n' "$*" >&2; }
 
 command -v claude >/dev/null 2>&1 || { log "claude CLI not on PATH; nothing to do"; exit 0; }
 
+SKILLS_DIR="${HOME}/.claude/skills"
+CACHE_DIR="${HOME}/.claude/plugins/cache"
+ANTIGRAVITY_REPO="https://github.com/sickn33/antigravity-awesome-skills.git"
+
 # marketplace name : GitHub repo : plugin to install from it
 ENTRIES=(
   "agentic-awesome-skills:sickn33/antigravity-awesome-skills:agentic-awesome-skills"
@@ -49,5 +53,69 @@ for entry in "${ENTRIES[@]}"; do
   fi
 done
 
-log "done; plugin skills bind at session start, so they are live from the next session on"
+# The upstream "plugin-safe" bundle is a subset: it leaves out about 90 skills
+# that the repository's own skills/ directory carries. Those have no plugin to
+# install them, so copy just those, and only those, to avoid loading every
+# skill twice.
+restore_plugin_excluded_skills() {
+  command -v python3 >/dev/null 2>&1 || { log "python3 missing; skipping excluded skills"; return; }
+  [ -d "$CACHE_DIR" ] || { log "no plugin cache; skipping excluded skills"; return; }
+
+  local tmp
+  tmp="$(mktemp -d)" || return
+  trap 'rm -rf "$tmp"' RETURN
+
+  if ! timeout 300 git clone --depth 1 --filter=blob:none --sparse -q \
+        "$ANTIGRAVITY_REPO" "$tmp/ag" 2>/dev/null \
+     || ! git -C "$tmp/ag" sparse-checkout set skills >/dev/null 2>&1; then
+    log "could not fetch the excluded skills; plugins alone are installed"
+    return
+  fi
+
+  python3 - "$tmp/ag/skills" "$CACHE_DIR" "$SKILLS_DIR" <<'PY'
+import glob, os, shutil, sys
+src, cache, dest = sys.argv[1], sys.argv[2], sys.argv[3]
+
+def names(root):
+    return {os.path.basename(os.path.dirname(p))
+            for p in glob.glob(root + "/**/SKILL.md", recursive=True)}
+
+# Served under a prefixed name by the claude.ai account or the synced plugins;
+# copying them here would only duplicate what is already loaded.
+elsewhere = {
+    "built-in-browser", "chrome-browser", "computer-use", "deep-research",
+    "doc-coauthoring", "docs", "docx", "google-workspace", "import-memory",
+    "linkedin-content", "linkedin-humanizer", "linkedin-strategy", "mcp-builder",
+    "morning", "pdf", "pptx", "skill-creator", "xlsx", "web-artifacts-builder",
+    "design-system",
+}
+covered = names(cache) | elsewhere
+os.makedirs(dest, exist_ok=True)
+
+copied = 0
+for path in glob.glob(src + "/**/SKILL.md", recursive=True):
+    d = os.path.dirname(path)
+    name = os.path.basename(d)
+    if name in covered or os.path.exists(os.path.join(dest, name)):
+        continue
+    try:
+        shutil.copytree(d, os.path.join(dest, name), symlinks=True)
+        copied += 1
+    except Exception:
+        pass
+
+# A dangling symlink in the upstream layout registers as a broken skill.
+for e in os.listdir(dest):
+    p = os.path.join(dest, e)
+    if os.path.islink(p) and not os.path.exists(p):
+        os.unlink(p)
+
+print(f"[claude-skills] copied {copied} skills the plugin bundle leaves out",
+      file=sys.stderr)
+PY
+}
+
+restore_plugin_excluded_skills
+
+log "done"
 exit 0

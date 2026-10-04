@@ -19,9 +19,23 @@ plugin marketplaces from GitHub:
 | `impeccable` | `pbakaus/impeccable` | frontend design direction, 4 agents, 24 commands |
 | `taste-skill` | `Leonxlnx/taste-skill` | 13 design variants |
 
-A cold run takes about 25 seconds. If the library is already installed, the
-script notices and exits without touching anything, so it costs nothing on a
-local machine or a warm container.
+A cold run takes about a minute. If the library is already installed, the script
+notices and exits without touching anything, so it costs nothing on a local
+machine or a warm container.
+
+## The skills no plugin carries
+
+The upstream bundle calls itself the "plugin-safe" distribution, and it is a
+subset: 2,576 of the 2,667 skills in the repository's own `skills/` directory.
+About 90 have no plugin to install them, among them `claude-code-expert`,
+`using-git-worktrees`, `delegating-to-agents`, `manage-skills` and
+`agent-creator`.
+
+So the script has a second phase. It sparse-checks out that directory and copies
+only the skills the plugins do not already provide, skipping the ~20 that the
+claude.ai account or the synced plugins serve under a prefixed name. Copying the
+directory wholesale would register every skill twice, once bare and once
+prefixed, and pay for about 126k tokens of descriptions for a second time.
 
 ## What it will not do
 
@@ -29,9 +43,10 @@ The script never fails a session start. Each step is optional and it always
 exits 0, so a network outage or a renamed upstream repo costs you the skills
 rather than the session.
 
-It also cannot make plugin skills appear part-way through a session. Plugins
-bind when a session starts, so a cold restore takes effect from the following
-session on.
+Skills do become available in the session that installs them. The CLI reports a
+freshly installed plugin as `enabled` rather than `loaded`, which reads like it
+is waiting for a restart, but the registry rescans and the skills are invokable
+once it does.
 
 ## A caveat worth reading
 
